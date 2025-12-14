@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FreshChain – Frontend</title>
+  <title>FreshChain – Blockchain Traceability</title>
 </head>
+
 <body>
 
 <h2>FreshChain – All-in-One Frontend</h2>
@@ -17,7 +18,7 @@
 <input id="bid" placeholder="Batch ID">
 <input id="name" placeholder="Product Name">
 <input id="qty" placeholder="Quantity">
-<button id="createBtn">Create Batch</button>
+<button id="createBtn" disabled>Create Batch</button>
 
 <hr>
 
@@ -26,30 +27,30 @@
 <input id="temp" placeholder="Temperature">
 <input id="hum" placeholder="Humidity">
 <input id="loc" placeholder="Location">
-<button id="sensorBtn">Add Sensor Data</button>
+<button id="sensorBtn" disabled>Add Sensor Data</button>
 
 <hr>
 
 <h3>Ownership Transfer</h3>
 <input id="tid" placeholder="Batch ID">
 <input id="to" placeholder="New Owner Address">
-<button id="transferBtn">Transfer Ownership</button>
+<button id="transferBtn" disabled>Transfer Ownership</button>
 
 <hr>
 
 <h3>Retailer</h3>
 <input id="rid" placeholder="Batch ID">
-<button id="arriveBtn">Mark As Arrived</button>
+<button id="arriveBtn" disabled>Mark As Arrived</button>
 
 <hr>
 
 <h3>Customer</h3>
 <input id="vid" placeholder="Batch ID">
-<button id="viewBtn">View History</button>
+<button id="viewBtn" disabled>View History</button>
 
 <pre id="out"></pre>
 
-<!-- ethers MUST be loaded first -->
+<!-- ethers.js -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <script>
@@ -69,13 +70,10 @@ const ABI = [
 let provider, signer, contract;
 
 /* ===============================
-   EVENT BINDINGS (THIS FIXES IT)
+   CONNECT METAMASK
 ================================ */
 document.getElementById("connectBtn").addEventListener("click", async () => {
-  if (!window.ethereum) {
-    alert("MetaMask not installed");
-    return;
-  }
+  if (!window.ethereum) return alert("MetaMask not installed");
 
   provider = new ethers.providers.Web3Provider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
@@ -84,28 +82,106 @@ document.getElementById("connectBtn").addEventListener("click", async () => {
 
   const account = await signer.getAddress();
   document.getElementById("account").innerText = account;
+
+  // enable buttons
+  ["createBtn","sensorBtn","transferBtn","arriveBtn","viewBtn"]
+    .forEach(id => document.getElementById(id).disabled = false);
 });
 
+/* ===============================
+   PRODUCER
+================================ */
 document.getElementById("createBtn").addEventListener("click", async () => {
-  await contract.createBatch(bid.value, name.value, qty.value);
+  if (!contract) return alert("Connect MetaMask first");
+
+  try {
+    const tx = await contract.createBatch(
+      parseInt(bid.value),
+      name.value,
+      parseInt(qty.value)
+    );
+    alert("Tx sent:\n" + tx.hash);
+    await tx.wait();
+    alert("Batch created successfully");
+  } catch (e) {
+    alert(e.reason || e.message);
+  }
 });
 
+/* ===============================
+   TRANSPORTER
+================================ */
 document.getElementById("sensorBtn").addEventListener("click", async () => {
-  await contract.addSensorData(sid.value, temp.value, hum.value, loc.value);
+  if (!contract) return alert("Connect MetaMask first");
+
+  try {
+    const tx = await contract.addSensorData(
+      parseInt(sid.value),
+      parseInt(temp.value),
+      parseInt(hum.value),
+      loc.value
+    );
+    alert("Tx sent:\n" + tx.hash);
+    await tx.wait();
+    alert("Sensor data added");
+  } catch (e) {
+    alert(e.reason || e.message);
+  }
 });
 
+/* ===============================
+   OWNERSHIP TRANSFER
+================================ */
 document.getElementById("transferBtn").addEventListener("click", async () => {
-  await contract.transferOwnership(tid.value, to.value);
+  if (!contract) return alert("Connect MetaMask first");
+
+  try {
+    const tx = await contract.transferOwnership(
+      parseInt(tid.value),
+      to.value
+    );
+    alert("Tx sent:\n" + tx.hash);
+    await tx.wait();
+    alert("Ownership transferred");
+  } catch (e) {
+    alert(e.reason || e.message);
+  }
 });
 
+/* ===============================
+   RETAILER
+================================ */
 document.getElementById("arriveBtn").addEventListener("click", async () => {
-  await contract.markAsArrived(rid.value, true);
+  if (!contract) return alert("Connect MetaMask first");
+
+  try {
+    const tx = await contract.markAsArrived(
+      parseInt(rid.value),
+      true
+    );
+    alert("Tx sent:\n" + tx.hash);
+    await tx.wait();
+    alert("Batch marked as arrived");
+  } catch (e) {
+    alert(e.reason || e.message);
+  }
 });
 
+/* ===============================
+   CUSTOMER VIEW
+================================ */
 document.getElementById("viewBtn").addEventListener("click", async () => {
-  const data = await contract.getBatchHistory(vid.value);
-  document.getElementById("out").innerText =
-    JSON.stringify(data, null, 2);
+  if (!contract) return alert("Connect MetaMask first");
+
+  try {
+    const data = await contract.getBatchHistory(
+      parseInt(vid.value)
+    );
+    document.getElementById("out").innerText =
+      JSON.stringify(data, null, 2);
+  } catch (e) {
+    alert(e.reason || e.message);
+  }
 });
 </script>
 
