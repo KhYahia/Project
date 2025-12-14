@@ -1,84 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>FreshChain – Product Traceability</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: system-ui, Arial; margin: 24px; }
-    pre { background: #fafafa; padding: 14px; border-radius: 10px; }
+    body { font-family: Arial; margin: 24px; }
+    pre { background: #f7f7f7; padding: 16px; border-radius: 10px; }
   </style>
 </head>
 <body>
 
 <h2>📦 FreshChain – Blockchain Product Traceability</h2>
 
-<pre id="history">Loading history...</pre>
+<pre id="out">Loading history...</pre>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-
 <script>
 const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
-
-const ABI = [{
-  "inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"}],
-  "name":"getBatchHistory",
-  "outputs":[{
-    "components":[
-      {"internalType":"uint256","name":"batchId","type":"uint256"},
-      {"internalType":"string","name":"productName","type":"string"},
-      {"internalType":"uint256","name":"quantity","type":"uint256"},
-      {"internalType":"address","name":"currentOwner","type":"address"},
-      {"internalType":"bool","name":"arrived","type":"bool"},
-      {"internalType":"bool","name":"inspectionPassed","type":"bool"},
-      {"components":[
-        {"internalType":"int256","name":"temperature","type":"int256"},
-        {"internalType":"int256","name":"humidity","type":"int256"},
-        {"internalType":"string","name":"location","type":"string"},
-        {"internalType":"uint256","name":"timestamp","type":"uint256"},
-        {"internalType":"address","name":"transporter","type":"address"}
-      ],"internalType":"struct FreshChain.SensorData[]","name":"sensors","type":"tuple[]"},
-      {"components":[
-        {"internalType":"address","name":"from","type":"address"},
-        {"internalType":"address","name":"to","type":"address"},
-        {"internalType":"uint256","name":"timestamp","type":"uint256"}
-      ],"internalType":"struct FreshChain.Ownership[]","name":"ownerships","type":"tuple[]"},
-      {"internalType":"bool","name":"exists","type":"bool"}
-    ],
-    "internalType":"struct FreshChain.Batch",
-    "name":"",
-    "type":"tuple"
-  }],
-  "stateMutability":"view",
-  "type":"function"
-}];
+const ABI = [
+  "function getBatchHistory(uint256) view returns (tuple(uint256,string,uint256,address,bool,bool,tuple(int256,int256,string,uint256,address)[],tuple(address,address,uint256)[],bool))"
+];
 
 const provider = new ethers.providers.JsonRpcProvider(
   "https://sepolia.infura.io/v3/YOUR_INFURA_KEY"
 );
-
 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
 
-function getParam(n) {
-  return new URLSearchParams(window.location.search).get(n);
-}
-
-function time(ts) {
-  return new Date(Number(ts) * 1000).toLocaleString();
-}
+const batchId = new URLSearchParams(location.search).get("batchId");
 
 (async () => {
-  const id = getParam("batchId");
-  if (!id) return history.textContent = "❌ No batch ID provided.";
+  if (!batchId) {
+    out.textContent = "No batch ID in QR.";
+    return;
+  }
 
-  const b = await contract.getBatchHistory(id);
-  if (!b.exists) return history.textContent = "❌ Batch not found.";
+  const b = await contract.getBatchHistory(batchId);
+  if (!b.exists) {
+    out.textContent = "Batch not found.";
+    return;
+  }
 
   let txt = `
 Batch ID: ${b.batchId}
 Product: ${b.productName}
 Quantity: ${b.quantity}
-Owner: ${b.currentOwner}
+Current Owner: ${b.currentOwner}
 Arrived: ${b.arrived}
 Inspection Passed: ${b.inspectionPassed}
+
+--- Sensor Logs ---
+`;
+
+  b.sensors.forEach((s,i) => {
+    txt += `
+#${i+1}
+Temp: ${s.temperature} °C
+Humidity: ${s.humidity} %
+Location: ${s.location}
+Time: ${new Date(s.timestamp * 1000).toLocaleString()}
+Transporter: ${s.transporter}
+`;
+  });
+
+  txt += "\n--- Ownership History ---\n";
+
+  b.ownerships.forEach((o,i) => {
+    txt += `
+#${i+1}
+From: ${o.from}
+To: ${o.to}
+Time: ${new Date(o.timestamp * 1000).toLocaleString()}
+`;
+  });
+
+  out.textContent = txt;
+})();
+</script>
+
+</body>
+</html>
