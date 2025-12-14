@@ -1,219 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>FreshChain – Blockchain Product Traceability</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<style>
-body { font-family: Arial, sans-serif; margin: 24px; }
-h2 { margin-top: 0 }
-.card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
-.row { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
-input, select, button { padding: 8px; }
-.hidden { display: none; }
-pre { background:#fafafa; padding:12px; border-radius:8px; }
-</style>
+  <meta charset="UTF-8" />
+  <title>FreshChain – Management Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+    input, button, select { padding: 8px; }
+    button { cursor: pointer; }
+    pre { background: #f7f7f7; padding: 12px; border-radius: 8px; }
+    .hidden { display: none; }
+  </style>
 </head>
-
 <body>
 
-<h2>FreshChain – All-in-One Management Panel</h2>
+<h2>FreshChain – Management Panel</h2>
 
-<!-- CONNECTION -->
 <div class="card">
   <button id="connectBtn">Connect MetaMask</button>
-  <div>Account: <b id="account">-</b></div>
-  <div>Network: <b>Sepolia</b></div>
+  <p><b>Account:</b> <span id="account">-</span></p>
+  <p><b>Network:</b> Sepolia</p>
+</div>
 
-  <div class="row">
-    <label>Select Role:</label>
-    <select id="roleSelect" disabled>
-      <option value="">Choose…</option>
-      <option value="admin">Admin</option>
-      <option value="producer">Producer</option>
-      <option value="transporter">Transporter</option>
-      <option value="distributor">Distributor</option>
-      <option value="retailer">Retailer</option>
-      <option value="customer">Customer</option>
-    </select>
-  </div>
+<div class="card">
+  <h3>Select Role</h3>
+  <select id="roleSelect">
+    <option value="">Choose role</option>
+    <option value="admin">Admin</option>
+    <option value="producer">Producer</option>
+    <option value="transporter">Transporter</option>
+    <option value="distributor">Distributor</option>
+    <option value="retailer">Retailer</option>
+  </select>
 </div>
 
 <!-- ADMIN -->
 <div class="card hidden" id="admin">
-<h3>Admin</h3>
-<input id="regAddr" placeholder="User address">
-<button onclick="register('registerProducer')">Register Producer</button>
-<button onclick="register('registerTransporter')">Register Transporter</button>
-<button onclick="register('registerDistributor')">Register Distributor</button>
-<button onclick="register('registerRetailer')">Register Retailer</button>
+  <h3>Admin – Register Roles</h3>
+  <input id="regAddr" placeholder="0x user address" />
+  <div class="row">
+    <button id="regProducer">Register Producer</button>
+    <button id="regTransporter">Register Transporter</button>
+    <button id="regDistributor">Register Distributor</button>
+    <button id="regRetailer">Register Retailer</button>
+  </div>
 </div>
 
 <!-- PRODUCER -->
 <div class="card hidden" id="producer">
-<h3>Producer</h3>
-<input id="p_bid" placeholder="Batch ID">
-<input id="p_name" placeholder="Product name">
-<input id="p_qty" placeholder="Quantity">
-<button onclick="createBatch()">Create Batch</button>
+  <h3>Producer – Create Batch</h3>
+  <input id="bid" placeholder="Batch ID" />
+  <input id="pname" placeholder="Product Name" />
+  <input id="qty" placeholder="Quantity" />
+  <button id="createBatch">Create Batch</button>
 </div>
 
 <!-- TRANSPORTER -->
 <div class="card hidden" id="transporter">
-<h3>Transporter</h3>
-<input id="t_bid" placeholder="Batch ID">
-<input id="t_temp" placeholder="Temperature">
-<input id="t_hum" placeholder="Humidity">
-<input id="t_loc" placeholder="Location">
-<button onclick="addSensor()">Add Sensor Data</button>
+  <h3>Transporter – Add Sensor Data</h3>
+  <input id="sid" placeholder="Batch ID" />
+  <input id="temp" placeholder="Temperature" />
+  <input id="hum" placeholder="Humidity" />
+  <input id="loc" placeholder="Location" />
+  <button id="addSensor">Add Sensor Data</button>
 </div>
 
 <!-- DISTRIBUTOR -->
 <div class="card hidden" id="distributor">
-<h3>Distributor</h3>
-<input id="d_bid" placeholder="Batch ID">
-<input id="d_to" placeholder="New owner address">
-<button onclick="transfer()">Transfer Ownership</button>
+  <h3>Distributor – Transfer Ownership</h3>
+  <input id="tid" placeholder="Batch ID" />
+  <input id="to" placeholder="New owner address" />
+  <button id="transfer">Transfer</button>
 </div>
 
 <!-- RETAILER -->
 <div class="card hidden" id="retailer">
-<h3>Retailer</h3>
-<input id="r_bid" placeholder="Batch ID">
-<select id="r_passed">
-  <option value="true">Inspection Passed</option>
-  <option value="false">Inspection Failed</option>
-</select>
-<button onclick="markArrived()">Mark Arrived</button>
+  <h3>Retailer – Mark Arrived</h3>
+  <input id="rid" placeholder="Batch ID" />
+  <select id="passed">
+    <option value="true">Inspection Passed</option>
+    <option value="false">Inspection Failed</option>
+  </select>
+  <button id="arrive">Mark Arrived</button>
 </div>
 
-<!-- CUSTOMER -->
-<div class="card hidden" id="customer">
-<h3>Customer – Product Traceability</h3>
-
-<div id="qrSection">
-  <input id="qrBatch" placeholder="Batch ID for QR">
-  <button onclick="generateQR()">Generate QR</button>
+<!-- QR -->
+<div class="card">
+  <h3>Generate QR Code</h3>
+  <input id="qrBatch" placeholder="Batch ID" />
+  <button id="genQR">Generate QR</button>
   <div id="qr"></div>
-</div>
-
-<h4>Product History</h4>
-<pre id="history">Scan QR code to view history.</pre>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <script>
-const CONTRACT = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
-const ABI = [ /* SAME ABI YOU USED – OMITTED HERE FOR BREVITY */ ];
+const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
+const ABI = [
+  "function createBatch(uint256,string,uint256)",
+  "function addSensorData(uint256,int256,int256,string)",
+  "function transferOwnership(uint256,address)",
+  "function markAsArrived(uint256,bool)",
+  "function registerProducer(address)",
+  "function registerTransporter(address)",
+  "function registerDistributor(address)",
+  "function registerRetailer(address)"
+];
 
 let provider, signer, contract;
 
-const sections = ["admin","producer","transporter","distributor","retailer","customer"];
-function show(role){
-  sections.forEach(s=>document.getElementById(s).classList.add("hidden"));
-  if(role) document.getElementById(role).classList.remove("hidden");
-}
+const hideAll = () =>
+  ["admin","producer","transporter","distributor","retailer"]
+  .forEach(id => document.getElementById(id).classList.add("hidden"));
 
-document.getElementById("roleSelect").onchange=e=>show(e.target.value);
-
-document.getElementById("connectBtn").onclick=async()=>{
-  provider=new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts",[]);
-  signer=provider.getSigner();
-  document.getElementById("account").innerText=await signer.getAddress();
-  contract=new ethers.Contract(CONTRACT,ABI,signer);
-  document.getElementById("roleSelect").disabled=false;
+document.getElementById("roleSelect").onchange = e => {
+  hideAll();
+  if (e.target.value)
+    document.getElementById(e.target.value).classList.remove("hidden");
 };
 
-async function register(fn){
-  await contract[fn](document.getElementById("regAddr").value);
-}
+document.getElementById("connectBtn").onclick = async () => {
+  provider = new ethers.providers.Web3Provider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+  signer = provider.getSigner();
+  document.getElementById("account").innerText = await signer.getAddress();
+  contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+};
 
-async function createBatch(){
-  await contract.createBatch(
-    Number(p_bid.value),
-    p_name.value,
-    Number(p_qty.value)
-  );
-}
+regProducer.onclick = () => contract.registerProducer(regAddr.value);
+regTransporter.onclick = () => contract.registerTransporter(regAddr.value);
+regDistributor.onclick = () => contract.registerDistributor(regAddr.value);
+regRetailer.onclick = () => contract.registerRetailer(regAddr.value);
 
-async function addSensor(){
-  await contract.addSensorData(
-    Number(t_bid.value),
-    Number(t_temp.value),
-    Number(t_hum.value),
-    t_loc.value
-  );
-}
+createBatch.onclick = () =>
+  contract.createBatch(bid.value, pname.value, qty.value);
 
-async function transfer(){
-  await contract.transferOwnership(
-    Number(d_bid.value),
-    d_to.value
-  );
-}
+addSensor.onclick = () =>
+  contract.addSensorData(sid.value, temp.value, hum.value, loc.value);
 
-async function markArrived(){
-  await contract.markAsArrived(
-    Number(r_bid.value),
-    r_passed.value==="true"
-  );
-}
+transfer.onclick = () =>
+  contract.transferOwnership(tid.value, to.value);
 
-/* ===== QR ===== */
-function generateQR(){
-  const id=qrBatch.value;
-  const url=`${location.origin}${location.pathname}?batchId=${id}`;
-  document.getElementById("qr").innerHTML="";
-  new QRCode(document.getElementById("qr"),url);
-}
+arrive.onclick = () =>
+  contract.markAsArrived(rid.value, passed.value === "true");
 
-/* ===== AUTO LOAD HISTORY FROM QR ===== */
-const params=new URLSearchParams(location.search);
-if(params.has("batchId")){
-  show("customer");
-  loadHistory(params.get("batchId"));
-}
-
-async function loadHistory(id){
-  provider=new ethers.providers.JsonRpcProvider(
-    "https://sepolia.infura.io/v3/YOUR_INFURA_KEY"
-  );
-  contract=new ethers.Contract(CONTRACT,ABI,provider);
-
-  const b=await contract.getBatchHistory(id);
-
-  let out=`Batch ID: ${b.batchId}
-Product: ${b.productName}
-Quantity: ${b.quantity}
-Owner: ${b.currentOwner}
-Arrived: ${b.arrived}
-Inspection Passed: ${b.inspectionPassed}
-
-Sensor Logs:
-`;
-
-  b.sensors.forEach(s=>{
-    out+=`- ${new Date(s.timestamp*1000).toLocaleString()}
-  Temp: ${s.temperature}°C
-  Humidity: ${s.humidity}%
-  Location: ${s.location}
-  Transporter: ${s.transporter}
-
-`;
+genQR.onclick = () => {
+  document.getElementById("qr").innerHTML = "";
+  new QRCode("qr", {
+    text: `${location.origin}/Project/scan.html?batchId=${qrBatch.value}`,
+    width: 180,
+    height: 180
   });
-
-  out+="Ownership History:\n";
-  b.ownerships.forEach(o=>{
-    out+=`- ${new Date(o.timestamp*1000).toLocaleString()}
-  ${o.from} → ${o.to}\n`;
-  });
-
-  history.innerText=out;
-}
+};
 </script>
 
 </body>
