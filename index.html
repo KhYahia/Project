@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>FreshChain</title>
+</head>
+<body>
+  <h2>FreshChain – Blockchain Food Traceability</h2>
+
+  <button onclick="connect()">Connect MetaMask</button>
+  <p><b>Account:</b> <span id="account">-</span></p>
+
+  <hr>
+
+  <h3>Producer</h3>
+  <input id="bid" placeholder="Batch ID (e.g. 101)">
+  <input id="name" placeholder="Product Name">
+  <input id="qty" placeholder="Quantity">
+  <button onclick="createBatch()">Create Batch</button>
+
+  <hr>
+
+  <h3>Transporter</h3>
+  <input id="sid" placeholder="Batch ID">
+  <input id="temp" placeholder="Temperature (-10..40)">
+  <input id="hum" placeholder="Humidity (0..40)">
+  <input id="loc" placeholder="Location">
+  <button onclick="addSensor()">Add Sensor Data</button>
+
+  <hr>
+
+  <h3>Ownership Transfer</h3>
+  <input id="tid" placeholder="Batch ID">
+  <input id="to" placeholder="New Owner Address">
+  <button onclick="transfer()">Transfer Ownership</button>
+
+  <hr>
+
+  <h3>Retailer</h3>
+  <input id="rid" placeholder="Batch ID">
+  <button onclick="arrive()">Mark As Arrived</button>
+
+  <hr>
+
+  <h3>Customer View</h3>
+  <input id="vid" placeholder="Batch ID">
+  <button onclick="view()">View Batch History</button>
+
+  <pre id="out"></pre>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
