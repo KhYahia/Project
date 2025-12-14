@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FreshChain – Product History</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body { font-family: system-ui, Arial; margin: 24px; }
+pre { background:#fafafa; padding:14px; border-radius:10px; }
+.card { border:1px solid #ddd; padding:16px; border-radius:10px; }
+</style>
+</head>
+
+<body>
+
+<h2>📦 FreshChain – Blockchain Product Traceability</h2>
+
+<div class="card">
+<div id="status">Loading history…</div>
+<pre id="out"></pre>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+<script>
+const CONTRACT = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
+const RPC = "https://sepolia.infura.io/v3/YOUR_KEY";
+const ABI = [...]; // SAME ABI
+
+const params = new URLSearchParams(location.search);
+const id = params.get("batchId");
+
+function time(t){ return new Date(t*1000).toLocaleString(); }
+
+async function load(){
+  if(!id){ status.textContent="No batch ID"; return; }
+
+  const provider = new ethers.providers.JsonRpcProvider(RPC);
+  const c = new ethers.Contract(CONTRACT, ABI, provider);
+  const b = await c.getBatchHistory(id);
+
+  if(!b.exists){ status.textContent="Batch not found"; return; }
+
+  let txt = `
+Batch ID: ${b.batchId}
+Product: ${b.productName}
+Quantity: ${b.quantity}
+Owner: ${b.currentOwner}
+Arrived: ${b.arrived}
+Inspection: ${b.inspectionPassed}
+
+=== SENSOR LOGS ===
+`;
+
+  b.sensors.forEach((s,i)=>{
+    txt += `
+#${i+1}
+Location: ${s.location}
+Temp: ${s.temperature}
+Humidity: ${s.humidity}
+Time: ${time(s.timestamp)}
+Transporter: ${s.transporter}
+`;
+  });
+
+  txt += "\n=== OWNERSHIP HISTORY ===\n";
+  b.ownerships.forEach((o,i)=>{
+    txt += `#${i+1} ${o.from} → ${o.to} at ${time(o.timestamp)}\n`;
+  });
+
+  status.textContent="History loaded";
+  out.textContent=txt;
+}
+
+load();
+</script>
+
+</body>
+</html>
