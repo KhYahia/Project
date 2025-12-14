@@ -56,7 +56,7 @@
 /* ===============================
    CONFIG
 ================================ */
-const CONTRACT_ADDRESS = "PASTE_YOUR_CONTRACT_ADDRESS_HERE";
+const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS_HERE";
 
 const ABI = [
   {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"int256","name":"temperature","type":"int256"},{"internalType":"int256","name":"humidity","type":"int256"},{"internalType":"string","name":"location","type":"string"}],"name":"addSensorData","outputs":[],"stateMutability":"nonpayable","type":"function"},
@@ -73,13 +73,19 @@ let provider, signer, contract;
 ================================ */
 connectBtn.onclick = async () => {
   if (!window.ethereum) return alert("MetaMask not installed");
+
   provider = new ethers.providers.Web3Provider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
   signer = provider.getSigner();
   contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
   account.innerText = await signer.getAddress();
-  ["createBtn","sensorBtn","transferBtn","arriveBtn","viewBtn"]
-    .forEach(b => document.getElementById(b).disabled = false);
+
+  createBtn.disabled = false;
+  sensorBtn.disabled = false;
+  transferBtn.disabled = false;
+  arriveBtn.disabled = false;
+  viewBtn.disabled = false;
 };
 
 /* ===============================
@@ -89,11 +95,11 @@ createBtn.onclick = async () => {
   try {
     if (isNaN(bid.value)) throw new Error("Batch ID must be a number");
     if (!productName.value.trim()) throw new Error("Product name is required");
-    if (isNaN(qty.value)) throw new Error("Quantity must be a valid number");
+    if (isNaN(qty.value)) throw new Error("Quantity must be a number");
 
     const tx = await contract.createBatch(
       Number(bid.value),
-      productName.value,
+      productName.value.trim(),
       Number(qty.value)
     );
     alert("Tx sent:\n" + tx.hash);
@@ -108,32 +114,38 @@ sensorBtn.onclick = async () => {
     if (isNaN(sid.value)) throw new Error("Batch ID must be a number");
     if (isNaN(temp.value)) throw new Error("Temperature must be a number");
     if (isNaN(hum.value)) throw new Error("Humidity must be a number");
-    const h = Number(hum.value);
-    if (h < 0 || h > 100) throw new Error("Enter valid humidity between 0 and 100");
+
+    const humidity = Number(hum.value);
+    if (humidity < 0 || humidity > 100)
+      throw new Error("Enter valid humidity between 0 and 100");
+
     if (!loc.value.trim()) throw new Error("Location is required");
 
     const tx = await contract.addSensorData(
       Number(sid.value),
       Number(temp.value),
-      h,
-      loc.value
+      humidity,
+      loc.value.trim()
     );
     alert("Tx sent:\n" + tx.hash);
   } catch (e) { alert(e.message); }
 };
 
 /* ===============================
-   TRANSFER OWNERSHIP
+   TRANSFER OWNERSHIP (FIXED)
 ================================ */
 transferBtn.onclick = async () => {
   try {
     if (isNaN(tid.value)) throw new Error("Batch ID must be a number");
-    if (!ethers.utils.isAddress(to.value))
+
+    const address = to.value.trim();
+    if (!address) throw new Error("New owner address is required");
+    if (!ethers.utils.isAddress(address))
       throw new Error("Enter a valid Ethereum address");
 
     const tx = await contract.transferOwnership(
       Number(tid.value),
-      to.value
+      address
     );
     alert("Tx sent:\n" + tx.hash);
   } catch (e) { alert(e.message); }
@@ -164,3 +176,4 @@ viewBtn.onclick = async () => {
 
 </body>
 </html>
+
