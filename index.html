@@ -1,24 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FreshChain – All-in-One Frontend</title>
 
 <style>
 body { font-family: system-ui, Arial, sans-serif; margin: 24px; }
-h2 { margin-top: 0; }
-.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
-input, select, button { padding: 8px; font-size: 14px; }
-input { min-width: 190px; }
-button { cursor: pointer; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+input, select, button { padding: 8px; }
 .card { border: 1px solid #ddd; border-radius: 10px; padding: 14px; margin: 14px 0; }
-.muted { color: #666; }
 .hidden { display: none; }
-.ok { color: #0a7; }
-.bad { color: #c00; }
-pre { white-space: pre-wrap; background: #fafafa; border: 1px solid #eee; padding: 12px; border-radius: 10px; }
-.tag { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#f2f2f2; margin-left: 8px; font-size: 12px; }
+pre { background:#fafafa; padding:12px; border-radius:8px; }
+.muted { color:#666; }
 </style>
 </head>
 
@@ -27,128 +21,143 @@ pre { white-space: pre-wrap; background: #fafafa; border: 1px solid #eee; paddin
 <h2>FreshChain – All-in-One Frontend</h2>
 
 <div class="card">
-  <div class="row">
-    <button id="connectBtn">Connect MetaMask</button>
-    <span class="muted">Network:</span> <b id="netName">-</b>
-    <span class="muted">Contract:</span> <b id="contractAddr">-</b>
-  </div>
-  <div class="row">
-    <span class="muted">Account:</span> <b id="account">-</b>
-    <span class="tag" id="roleTag">Role: -</span>
-  </div>
+  <button id="connectBtn">Connect MetaMask</button>
+  <p>Account: <b id="account">-</b></p>
 
-  <div class="row">
-    <label class="muted">Select Role:</label>
-    <select id="roleSelect" disabled>
-      <option value="">Choose…</option>
-      <option value="admin">Admin</option>
-      <option value="producer">Producer</option>
-      <option value="transporter">Transporter</option>
-      <option value="distributor">Distributor</option>
-      <option value="retailer">Retailer</option>
-      <option value="customer">Customer</option>
-    </select>
-  </div>
+  <select id="roleSelect" disabled>
+    <option value="">Choose role</option>
+    <option value="customer">Customer</option>
+  </select>
 </div>
 
 <!-- CUSTOMER -->
 <div class="card hidden" id="customerSection">
-<h3>Customer</h3>
+  <h3>Customer</h3>
 
-<div class="row">
-  <input id="vid" placeholder="Batch ID (number)">
-  <button id="viewBtn" disabled>View History</button>
-</div>
+  <div class="row">
+    <input id="vid" placeholder="Batch ID">
+    <button id="viewBtn" disabled>View History</button>
+  </div>
 
-<hr>
+  <hr>
 
-<h4>QR Code</h4>
-<div class="row">
-  <input id="qrBatchId" placeholder="Batch ID for QR">
-  <button onclick="generateQR()">Generate QR</button>
-</div>
+  <h4>QR Code</h4>
+  <div class="row">
+    <input id="qrBatchId" placeholder="Batch ID for QR">
+    <button onclick="generateQR()">Generate QR</button>
+  </div>
 
-<div id="qrBox"></div>
-<p class="muted" id="qrLink"></p>
+  <div id="qrBox"></div>
+  <p class="muted" id="qrLink"></p>
 
-<pre id="out">History output will appear here…</pre>
+  <pre id="out">History will appear here…</pre>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <script>
-/**************** CONFIG ****************/
+/* CONFIG */
 const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
-const ABI = /* SAME ABI YOU ALREADY HAVE */ [];
+const ABI = [
+  {
+    "inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"}],
+    "name":"getBatchHistory",
+    "outputs":[
+      {
+        "components":[
+          {"internalType":"uint256","name":"batchId","type":"uint256"},
+          {"internalType":"string","name":"productName","type":"string"},
+          {"internalType":"uint256","name":"quantity","type":"uint256"},
+          {"internalType":"address","name":"currentOwner","type":"address"},
+          {"internalType":"bool","name":"arrived","type":"bool"},
+          {"internalType":"bool","name":"inspectionPassed","type":"bool"},
+          {
+            "components":[
+              {"internalType":"int256","name":"temperature","type":"int256"},
+              {"internalType":"int256","name":"humidity","type":"int256"},
+              {"internalType":"string","name":"location","type":"string"},
+              {"internalType":"uint256","name":"timestamp","type":"uint256"},
+              {"internalType":"address","name":"transporter","type":"address"}
+            ],
+            "internalType":"struct FreshChain.SensorData[]",
+            "name":"sensors",
+            "type":"tuple[]"
+          }
+        ],
+        "internalType":"struct FreshChain.Batch",
+        "name":"",
+        "type":"tuple"
+      }
+    ],
+    "stateMutability":"view",
+    "type":"function"
+  }
+];
 
 let provider, signer, contract;
 
-/**************** HELPERS ****************/
 const $ = id => document.getElementById(id);
 
-function showCustomer(){
-  $("customerSection").classList.remove("hidden");
-  $("roleSelect").value = "customer";
-}
-
-/**************** CONNECT ****************/
-$("connectBtn").onclick = async()=>{
+/* CONNECT */
+$("connectBtn").onclick = async () => {
   provider = new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts",[]);
+  await provider.send("eth_requestAccounts", []);
   signer = provider.getSigner();
   contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
   $("account").innerText = await signer.getAddress();
-  $("netName").innerText = "Sepolia (11155111)";
-  $("contractAddr").innerText = CONTRACT_ADDRESS.slice(0,6)+"…"+CONTRACT_ADDRESS.slice(-4);
   $("roleSelect").disabled = false;
   $("viewBtn").disabled = false;
+  $("customerSection").classList.remove("hidden");
 
   loadFromQR();
 };
 
-/**************** VIEW HISTORY ****************/
-$("viewBtn").onclick = async()=>{
+/* VIEW HISTORY */
+$("viewBtn").onclick = async () => {
   const id = $("vid").value;
-  if(isNaN(id)) return alert("Batch ID must be a number");
+  if (isNaN(id)) return alert("Batch ID must be a number");
 
   const b = await contract.getBatchHistory(id);
-  let t = `Batch ID: ${b.batchId}\nProduct: ${b.productName}\nQuantity: ${b.quantity}\n`;
-  t += `Arrived: ${b.arrived}\nInspection Passed: ${b.inspectionPassed}\n\nSensors:\n`;
+  let t = `Batch ID: ${b.batchId}\n`;
+  t += `Product: ${b.productName}\n`;
+  t += `Quantity: ${b.quantity}\n`;
+  t += `Arrived: ${b.arrived}\n`;
+  t += `Inspection Passed: ${b.inspectionPassed}\n\n`;
 
-  if(b.sensors.length===0) t+="No sensor data\n";
-  b.sensors.forEach(s=>{
-    t+=`Temp:${s.temperature} Hum:${s.humidity} Location:${s.location}\n`;
-  });
+  if (b.sensors.length === 0) {
+    t += "No sensor data\n";
+  } else {
+    b.sensors.forEach(s => {
+      t += `Temp:${s.temperature} Hum:${s.humidity} Location:${s.location}\n`;
+    });
+  }
 
   $("out").innerText = t;
 };
 
-/**************** QR ****************/
-function generateQR(){
+/* QR GENERATION */
+function generateQR() {
   const id = $("qrBatchId").value;
-  if(isNaN(id)) return alert("Batch ID must be number");
+  if (isNaN(id)) return alert("Batch ID must be a number");
 
   const url = location.origin + location.pathname + "?batchId=" + id;
-  $("qrBox").innerHTML="";
-  new QRCode("qrBox",{text:url,width:180,height:180});
+  $("qrBox").innerHTML = "";
+  new QRCode("qrBox", { text: url, width: 180, height: 180 });
   $("qrLink").innerText = url;
 }
 
-async function loadFromQR(){
-  const p = new URLSearchParams(location.search);
-  const id = p.get("batchId");
-  if(id){
-    $("vid").value = id;
-    showCustomer();
-    await $("viewBtn").click();
-  }
+/* AUTO LOAD FROM QR */
+async function loadFromQR() {
+  const params = new URLSearchParams(location.search);
+  const id = params.get("batchId");
+  if (!id) return;
+
+  $("vid").value = id;
+  await $("viewBtn").click();
 }
 </script>
 
 </body>
 </html>
-
-
-
