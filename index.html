@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>FreshChain</title>
+  <meta charset="UTF-8" />
+  <title>FreshChain – All-in-One Frontend</title>
 </head>
+
 <body>
 
 <h2>FreshChain – All-in-One Frontend</h2>
@@ -33,31 +34,27 @@
 <h3>Ownership Transfer</h3>
 <input id="tid" placeholder="Batch ID">
 <input id="to" placeholder="New Owner Address">
-<button onclick="transfer()">Transfer Ownership</button>
+<button onclick="transferOwnership()">Transfer Ownership</button>
 
 <hr>
 
 <h3>Retailer</h3>
 <input id="rid" placeholder="Batch ID">
-<button onclick="arrive()">Mark As Arrived</button>
+<button onclick="markArrived()">Mark As Arrived</button>
 
 <hr>
 
 <h3>Customer</h3>
 <input id="vid" placeholder="Batch ID">
-<button onclick="view()">View History</button>
+<button onclick="viewHistory()">View History</button>
 
 <pre id="out"></pre>
 
+<!-- ✅ ethers MUST be loaded first -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <script>
-const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
-
-const ABI = [
-  {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"int256","name":"temperature","type":"int256"},{"internalType":"int256","name":"humidity","type":"int256"},{"internalType":"string","name":"location","type":"string"}],"name":"addSensorData","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"string","name":"productName","type":"string"},{"internalType":"uint256","name":"quantity","type":"uint256"}],"name":"createBatch","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"bool","name":"passed","type":"bool"}],"name":"markAsArrived","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"}],"name":"getBatchHistory","outputs":[{"components":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"string","name":"productName","type":"string"},{"internalType":"uint256","name":"quantity","type":"uint256"},{"internalType":"address","name":"currentOwner","type":"address"},{"internalType":"bool","name":"arrived","type":"bool"},{"internalType":"bool","name":"inspectionPassed","type":"bool"},{"components":[{"internalType":"int256","name":"te]()]()]()
-
+/* ===============================
+   CONTRACT CONFIG (YOUR REAL ONE)
+================================ */
+const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7F_
