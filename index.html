@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FreshChain – All-in-One Frontend</title>
+  <title>FreshChain – Blockchain Supply Chain</title>
 </head>
 
 <body>
 
-<h2>FreshChain – All-in-One Frontend</h2>
+<h2>FreshChain – Blockchain Supply Chain</h2>
 
 <button id="connectBtn">Connect MetaMask</button>
-<p><b>Account:</b> <span id="account">-</span></p>
+<p><b>Connected account:</b> <span id="account">-</span></p>
 
 <hr>
 
@@ -54,7 +54,7 @@
 
 <script>
 /* ===============================
-   CONFIG
+   CONFIGURATION
 ================================ */
 const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
 
@@ -69,10 +69,13 @@ const ABI = [
 let provider, signer, contract;
 
 /* ===============================
-   CONNECT
+   CONNECT METAMASK
 ================================ */
 connectBtn.onclick = async () => {
-  if (!window.ethereum) return alert("MetaMask not installed");
+  if (!window.ethereum) {
+    alert("MetaMask is not installed");
+    return;
+  }
 
   provider = new ethers.providers.Web3Provider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
@@ -93,17 +96,35 @@ connectBtn.onclick = async () => {
 ================================ */
 createBtn.onclick = async () => {
   try {
-    if (isNaN(bid.value)) throw new Error("Batch ID must be a number");
-    if (!productName.value.trim()) throw new Error("Product name is required");
-    if (isNaN(qty.value)) throw new Error("Quantity must be a number");
+    if (isNaN(bid.value))
+      throw new Error("Batch ID must be a number");
+
+    if (!productName.value.trim())
+      throw new Error("Product name is required");
+
+    if (isNaN(qty.value))
+      throw new Error("Quantity must be a number");
+
+    const batchId = Number(bid.value);
 
     const tx = await contract.createBatch(
-      Number(bid.value),
+      batchId,
       productName.value.trim(),
       Number(qty.value)
     );
-    alert("Tx sent:\n" + tx.hash);
-  } catch (e) { alert(e.message); }
+
+    alert("Transaction sent:\n" + tx.hash);
+
+  } catch (e) {
+    if (e.message.includes("Batch exists")) {
+      alert(
+        `Batch ID ${bid.value} already exists.\n` +
+        `Please use a different batch ID or redeploy the contract to reset the data.`
+      );
+    } else {
+      alert(e.message);
+    }
+  }
 };
 
 /* ===============================
@@ -119,7 +140,8 @@ sensorBtn.onclick = async () => {
     if (humidity < 0 || humidity > 100)
       throw new Error("Enter valid humidity between 0 and 100");
 
-    if (!loc.value.trim()) throw new Error("Location is required");
+    if (!loc.value.trim())
+      throw new Error("Location is required");
 
     const tx = await contract.addSensorData(
       Number(sid.value),
@@ -127,19 +149,26 @@ sensorBtn.onclick = async () => {
       humidity,
       loc.value.trim()
     );
-    alert("Tx sent:\n" + tx.hash);
-  } catch (e) { alert(e.message); }
+
+    alert("Transaction sent:\n" + tx.hash);
+
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 /* ===============================
-   TRANSFER OWNERSHIP (FIXED)
+   TRANSFER OWNERSHIP
 ================================ */
 transferBtn.onclick = async () => {
   try {
-    if (isNaN(tid.value)) throw new Error("Batch ID must be a number");
+    if (isNaN(tid.value))
+      throw new Error("Batch ID must be a number");
 
     const address = to.value.trim();
-    if (!address) throw new Error("New owner address is required");
+    if (!address)
+      throw new Error("New owner address is required");
+
     if (!ethers.utils.isAddress(address))
       throw new Error("Enter a valid Ethereum address");
 
@@ -147,8 +176,12 @@ transferBtn.onclick = async () => {
       Number(tid.value),
       address
     );
-    alert("Tx sent:\n" + tx.hash);
-  } catch (e) { alert(e.message); }
+
+    alert("Transaction sent:\n" + tx.hash);
+
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 /* ===============================
@@ -156,10 +189,15 @@ transferBtn.onclick = async () => {
 ================================ */
 arriveBtn.onclick = async () => {
   try {
-    if (isNaN(rid.value)) throw new Error("Batch ID must be a number");
+    if (isNaN(rid.value))
+      throw new Error("Batch ID must be a number");
+
     const tx = await contract.markAsArrived(Number(rid.value), true);
-    alert("Tx sent:\n" + tx.hash);
-  } catch (e) { alert(e.message); }
+    alert("Transaction sent:\n" + tx.hash);
+
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 /* ===============================
@@ -167,13 +205,19 @@ arriveBtn.onclick = async () => {
 ================================ */
 viewBtn.onclick = async () => {
   try {
-    if (isNaN(vid.value)) throw new Error("Batch ID must be a number");
+    if (isNaN(vid.value))
+      throw new Error("Batch ID must be a number");
+
     const data = await contract.getBatchHistory(Number(vid.value));
     out.innerText = JSON.stringify(data, null, 2);
-  } catch (e) { alert(e.message); }
+
+  } catch (e) {
+    alert(e.message);
+  }
 };
 </script>
 
 </body>
 </html>
+
 
