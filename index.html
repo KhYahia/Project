@@ -16,7 +16,7 @@
 
 <h3>Producer</h3>
 <input id="bid" placeholder="Batch ID">
-<input id="name" placeholder="Product Name">
+<input id="productName" placeholder="Product Name">
 <input id="qty" placeholder="Quantity">
 <button id="createBtn" disabled>Create Batch</button>
 
@@ -110,12 +110,12 @@ document.getElementById("createBtn").addEventListener("click", async () => {
 
   try {
     requireValue(bid.value, "Batch ID required");
-    requireValue(name.value, "Product name required");
+    requireValue(productName.value, "Product name required");
     requireValue(qty.value, "Quantity required");
 
     const tx = await contract.createBatch(
       Number(bid.value),
-      name.value.trim(),
+      productName.value.trim(),
       Number(qty.value)
     );
 
