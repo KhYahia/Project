@@ -1,169 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>FreshChain – Management Panel</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <title>FreshChain – Management Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-<style>
-body { font-family: system-ui, Arial; margin: 24px; }
-.card { border:1px solid #ddd; border-radius:10px; padding:16px; margin-bottom:16px; }
-.row { display:flex; gap:10px; flex-wrap:wrap; margin:8px 0; }
-input, button, select { padding:8px; }
-.hidden { display:none; }
-pre { background:#fafafa; padding:12px; border-radius:10px; }
-</style>
+  <style>
+    body { font-family: system-ui, Arial; margin: 24px; }
+    .card { border: 1px solid #ddd; padding: 16px; border-radius: 10px; margin-bottom: 20px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+    input, button { padding: 8px; font-size: 14px; }
+    pre { background: #fafafa; padding: 12px; border-radius: 8px; }
+  </style>
 </head>
-
 <body>
 
-<h2>FreshChain – Supply Chain Management</h2>
+<h2>FreshChain – Management Panel</h2>
 
 <div class="card">
-  <button id="connect">Connect MetaMask</button>
-  <div>Account: <b id="account">-</b></div>
-  <div>Role: <b id="role">-</b></div>
-
-  <select id="roleSelect" disabled>
-    <option value="">Select Role</option>
-    <option value="admin">Admin</option>
-    <option value="producer">Producer</option>
-    <option value="transporter">Transporter</option>
-    <option value="distributor">Distributor</option>
-    <option value="retailer">Retailer</option>
-  </select>
+  <button id="connectBtn">Connect MetaMask</button><br><br>
+  <b>Account:</b> <span id="account">-</span><br>
+  <b>Network:</b> Sepolia
 </div>
 
-<!-- ADMIN -->
-<div class="card hidden" id="admin">
-<h3>Admin – Register Roles</h3>
-<input id="addr" placeholder="0x address">
-<button onclick="register('registerProducer')">Producer</button>
-<button onclick="register('registerTransporter')">Transporter</button>
-<button onclick="register('registerDistributor')">Distributor</button>
-<button onclick="register('registerRetailer')">Retailer</button>
-</div>
-
-<!-- PRODUCER -->
-<div class="card hidden" id="producer">
-<h3>Producer – Create Batch</h3>
-<input id="pid" placeholder="Batch ID">
-<input id="pname" placeholder="Product name">
-<input id="qty" placeholder="Quantity">
-<button onclick="createBatch()">Create</button>
-</div>
-
-<!-- TRANSPORTER -->
-<div class="card hidden" id="transporter">
-<h3>Transporter – Sensor Data</h3>
-<input id="tid" placeholder="Batch ID">
-<input id="temp" placeholder="Temperature">
-<input id="hum" placeholder="Humidity">
-<input id="loc" placeholder="Location">
-<button onclick="sensor()">Add</button>
-</div>
-
-<!-- DISTRIBUTOR -->
-<div class="card hidden" id="distributor">
-<h3>Distributor – Transfer Ownership</h3>
-<input id="did" placeholder="Batch ID">
-<input id="to" placeholder="New owner address">
-<button onclick="transfer()">Transfer</button>
-</div>
-
-<!-- RETAILER -->
-<div class="card hidden" id="retailer">
-<h3>Retailer – Arrival</h3>
-<input id="rid" placeholder="Batch ID">
-<select id="pass">
-<option value="true">Passed</option>
-<option value="false">Failed</option>
-</select>
-<button onclick="arrive()">Confirm</button>
-</div>
-
-<!-- QR -->
 <div class="card">
-<h3>Generate QR Code (Customer)</h3>
-<input id="qrId" placeholder="Batch ID">
-<button onclick="makeQR()">Generate</button>
-<div id="qr"></div>
-<p id="qrLink"></p>
+  <h3>Customer – View History</h3>
+  <div class="row">
+    <input id="viewId" placeholder="Batch ID">
+    <button id="viewBtn">View History</button>
+  </div>
+  <pre id="out">History will appear here…</pre>
+</div>
+
+<div class="card">
+  <h3>QR Code</h3>
+  <div class="row">
+    <input id="qrId" placeholder="Batch ID">
+    <button id="qrBtn">Generate QR</button>
+  </div>
+  <canvas id="qrCanvas"></canvas>
+  <p id="qrLink"></p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 
 <script>
-const CONTRACT = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
-const ABI = [...]; // ← USE SAME ABI YOU ALREADY HAVE
+const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
 
-let provider, signer, contract, account;
+const ABI = [{
+  "inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"}],
+  "name":"getBatchHistory",
+  "outputs":[{
+    "components":[
+      {"internalType":"uint256","name":"batchId","type":"uint256"},
+      {"internalType":"string","name":"productName","type":"string"},
+      {"internalType":"uint256","name":"quantity","type":"uint256"},
+      {"internalType":"address","name":"currentOwner","type":"address"},
+      {"internalType":"bool","name":"arrived","type":"bool"},
+      {"internalType":"bool","name":"inspectionPassed","type":"bool"},
+      {"components":[
+        {"internalType":"int256","name":"temperature","type":"int256"},
+        {"internalType":"int256","name":"humidity","type":"int256"},
+        {"internalType":"string","name":"location","type":"string"},
+        {"internalType":"uint256","name":"timestamp","type":"uint256"},
+        {"internalType":"address","name":"transporter","type":"address"}
+      ],"internalType":"struct FreshChain.SensorData[]","name":"sensors","type":"tuple[]"},
+      {"components":[
+        {"internalType":"address","name":"from","type":"address"},
+        {"internalType":"address","name":"to","type":"address"},
+        {"internalType":"uint256","name":"timestamp","type":"uint256"}
+      ],"internalType":"struct FreshChain.Ownership[]","name":"ownerships","type":"tuple[]"},
+      {"internalType":"bool","name":"exists","type":"bool"}
+    ],
+    "internalType":"struct FreshChain.Batch",
+    "name":"",
+    "type":"tuple"
+  }],
+  "stateMu
 
-const sections = {
-  admin, producer, transporter, distributor, retailer
-};
-
-connect.onclick = async () => {
-  provider = new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  signer = provider.getSigner();
-  account = await signer.getAddress();
-  contract = new ethers.Contract(CONTRACT, ABI, signer);
-
-  document.getElementById("account").textContent = account;
-  roleSelect.disabled = false;
-
-  const owner = await contract.owner();
-  const roles = [];
-  if (account === owner) roles.push("admin");
-  if (await contract.isProducer(account)) roles.push("producer");
-  if (await contract.isTransporter(account)) roles.push("transporter");
-  if (await contract.isDistributor(account)) roles.push("distributor");
-  if (await contract.isRetailer(account)) roles.push("retailer");
-
-  document.getElementById("role").textContent = roles.join(", ") || "customer";
-};
-
-roleSelect.onchange = () => {
-  Object.values(sections).forEach(s => s.classList.add("hidden"));
-  const r = roleSelect.value;
-  if (sections[r]) sections[r].classList.remove("hidden");
-};
-
-async function register(fn){
-  await contract[fn](addr.value);
-  alert("Role registered");
-}
-
-async function createBatch(){
-  await contract.createBatch(pid.value, pname.value, qty.value);
-  alert("Batch created");
-}
-
-async function sensor(){
-  await contract.addSensorData(tid.value, temp.value, hum.value, loc.value);
-  alert("Sensor added");
-}
-
-async function transfer(){
-  await contract.transferOwnership(did.value, to.value);
-  alert("Transferred");
-}
-
-async function arrive(){
-  await contract.markAsArrived(rid.value, pass.value==="true");
-  alert("Arrived");
-}
-
-function makeQR(){
-  qr.innerHTML = "";
-  const url = `https://khyahia.github.io/Project/scan.html?batchId=${qrId.value}`;
-  new QRCode(qr, url);
-  qrLink.textContent = url;
-}
-</script>
-
-</body>
-</html>
 
