@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>FreshChain – All-in-One Frontend</title>
+  <meta charset="UTF-8">
+  <title>FreshChain – Frontend</title>
 </head>
-
 <body>
 
 <h2>FreshChain – All-in-One Frontend</h2>
 
-<button onclick="connect()">Connect MetaMask</button>
+<button id="connectBtn">Connect MetaMask</button>
 <p><b>Account:</b> <span id="account">-</span></p>
 
 <hr>
@@ -18,7 +17,7 @@
 <input id="bid" placeholder="Batch ID">
 <input id="name" placeholder="Product Name">
 <input id="qty" placeholder="Quantity">
-<button onclick="createBatch()">Create Batch</button>
+<button id="createBtn">Create Batch</button>
 
 <hr>
 
@@ -27,34 +26,88 @@
 <input id="temp" placeholder="Temperature">
 <input id="hum" placeholder="Humidity">
 <input id="loc" placeholder="Location">
-<button onclick="addSensor()">Add Sensor Data</button>
+<button id="sensorBtn">Add Sensor Data</button>
 
 <hr>
 
 <h3>Ownership Transfer</h3>
 <input id="tid" placeholder="Batch ID">
 <input id="to" placeholder="New Owner Address">
-<button onclick="transferOwnership()">Transfer Ownership</button>
+<button id="transferBtn">Transfer Ownership</button>
 
 <hr>
 
 <h3>Retailer</h3>
 <input id="rid" placeholder="Batch ID">
-<button onclick="markArrived()">Mark As Arrived</button>
+<button id="arriveBtn">Mark As Arrived</button>
 
 <hr>
 
 <h3>Customer</h3>
 <input id="vid" placeholder="Batch ID">
-<button onclick="viewHistory()">View History</button>
+<button id="viewBtn">View History</button>
 
 <pre id="out"></pre>
 
-<!-- ✅ ethers MUST be loaded first -->
+<!-- ethers MUST be loaded first -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <script>
 /* ===============================
-   CONTRACT CONFIG (YOUR REAL ONE)
+   CONTRACT CONFIG
 ================================ */
-const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7F_
+const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
+
+const ABI = [
+  {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"int256","name":"temperature","type":"int256"},{"internalType":"int256","name":"humidity","type":"int256"},{"internalType":"string","name":"location","type":"string"}],"name":"addSensorData","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"string","name":"productName","type":"string"},{"internalType":"uint256","name":"quantity","type":"uint256"}],"name":"createBatch","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"bool","name":"passed","type":"bool"}],"name":"markAsArrived","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"}],"name":"getBatchHistory","outputs":[{"components":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"string","name":"productName","type":"string"},{"internalType":"uint256","name":"quantity","type":"uint256"},{"internalType":"address","name":"currentOwner","type":"address"},{"internalType":"bool","name":"arrived","type":"bool"},{"internalType":"bool","name":"inspectionPassed","type":"bool"},{"components":[{"internalType":"int256","name":"temperature","type":"int256"},{"internalType":"int256","name":"humidity","type":"int256"},{"internalType":"string","name":"location","type":"string"},{"internalType":"uint256","name":"timestamp","type":"uint256"},{"internalType":"address","name":"transporter","type":"address"}],"internalType":"struct FreshChain.SensorData[]","name":"sensors","type":"tuple[]"},{"components":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"timestamp","type":"uint256"}],"internalType":"struct FreshChain.Ownership[]","name":"ownerships","type":"tuple[]"},{"internalType":"bool","name":"exists","type":"bool"}],"internalType":"struct FreshChain.Batch","name":"","type":"tuple"}],"stateMutability":"view","type":"function"}
+];
+
+let provider, signer, contract;
+
+/* ===============================
+   EVENT BINDINGS (THIS FIXES IT)
+================================ */
+document.getElementById("connectBtn").addEventListener("click", async () => {
+  if (!window.ethereum) {
+    alert("MetaMask not installed");
+    return;
+  }
+
+  provider = new ethers.providers.Web3Provider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+  signer = provider.getSigner();
+  contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+  const account = await signer.getAddress();
+  document.getElementById("account").innerText = account;
+});
+
+document.getElementById("createBtn").addEventListener("click", async () => {
+  await contract.createBatch(bid.value, name.value, qty.value);
+});
+
+document.getElementById("sensorBtn").addEventListener("click", async () => {
+  await contract.addSensorData(sid.value, temp.value, hum.value, loc.value);
+});
+
+document.getElementById("transferBtn").addEventListener("click", async () => {
+  await contract.transferOwnership(tid.value, to.value);
+});
+
+document.getElementById("arriveBtn").addEventListener("click", async () => {
+  await contract.markAsArrived(rid.value, true);
+});
+
+document.getElementById("viewBtn").addEventListener("click", async () => {
+  const data = await contract.getBatchHistory(vid.value);
+  document.getElementById("out").innerText =
+    JSON.stringify(data, null, 2);
+});
+</script>
+
+</body>
+</html>
