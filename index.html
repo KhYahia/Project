@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FreshChain – Blockchain Traceability</title>
+  <title>FreshChain – All-in-One Frontend</title>
 </head>
 
 <body>
@@ -50,14 +50,13 @@
 
 <pre id="out"></pre>
 
-<!-- ethers.js -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <script>
 /* ===============================
-   CONTRACT CONFIG
+   CONFIG
 ================================ */
-const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
+const CONTRACT_ADDRESS = "PASTE_YOUR_CONTRACT_ADDRESS_HERE";
 
 const ABI = [
   {"inputs":[{"internalType":"uint256","name":"batchId","type":"uint256"},{"internalType":"int256","name":"temperature","type":"int256"},{"internalType":"int256","name":"humidity","type":"int256"},{"internalType":"string","name":"location","type":"string"}],"name":"addSensorData","outputs":[],"stateMutability":"nonpayable","type":"function"},
@@ -70,155 +69,97 @@ const ABI = [
 let provider, signer, contract;
 
 /* ===============================
-   VALIDATION HELPERS
+   CONNECT
 ================================ */
-function requireValue(v, msg) {
-  if (v === undefined || v === null || v === "") {
-    throw new Error(msg);
-  }
-}
-
-function requireAddress(addr) {
-  if (!ethers.utils.isAddress(addr)) {
-    throw new Error("Invalid Ethereum address");
-  }
-}
-
-/* ===============================
-   CONNECT METAMASK
-================================ */
-document.getElementById("connectBtn").addEventListener("click", async () => {
+connectBtn.onclick = async () => {
   if (!window.ethereum) return alert("MetaMask not installed");
-
   provider = new ethers.providers.Web3Provider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
   signer = provider.getSigner();
   contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-
-  const account = await signer.getAddress();
-  document.getElementById("account").innerText = account;
-
+  account.innerText = await signer.getAddress();
   ["createBtn","sensorBtn","transferBtn","arriveBtn","viewBtn"]
-    .forEach(id => document.getElementById(id).disabled = false);
-});
+    .forEach(b => document.getElementById(b).disabled = false);
+};
 
 /* ===============================
-   CREATE BATCH (PRODUCER)
+   CREATE BATCH
 ================================ */
-document.getElementById("createBtn").addEventListener("click", async () => {
-  if (!contract) return alert("Connect MetaMask first");
-
+createBtn.onclick = async () => {
   try {
-    requireValue(bid.value, "Batch ID required");
-    requireValue(productName.value, "Product name required");
-    requireValue(qty.value, "Quantity required");
+    if (isNaN(bid.value)) throw new Error("Batch ID must be a number");
+    if (!productName.value.trim()) throw new Error("Product name is required");
+    if (isNaN(qty.value)) throw new Error("Quantity must be a valid number");
 
     const tx = await contract.createBatch(
       Number(bid.value),
-      productName.value.trim(),
+      productName.value,
       Number(qty.value)
     );
-
     alert("Tx sent:\n" + tx.hash);
-    await tx.wait();
-    alert("✅ Batch created");
-  } catch (e) {
-    alert("❌ " + e.message);
-  }
-});
+  } catch (e) { alert(e.message); }
+};
 
 /* ===============================
-   ADD SENSOR DATA (TRANSPORTER)
+   ADD SENSOR DATA
 ================================ */
-document.getElementById("sensorBtn").addEventListener("click", async () => {
-  if (!contract) return alert("Connect MetaMask first");
-
+sensorBtn.onclick = async () => {
   try {
-    requireValue(sid.value, "Batch ID required");
-    requireValue(temp.value, "Temperature required");
-    requireValue(hum.value, "Humidity required");
-    requireValue(loc.value, "Location required");
+    if (isNaN(sid.value)) throw new Error("Batch ID must be a number");
+    if (isNaN(temp.value)) throw new Error("Temperature must be a number");
+    if (isNaN(hum.value)) throw new Error("Humidity must be a number");
+    const h = Number(hum.value);
+    if (h < 0 || h > 100) throw new Error("Enter valid humidity between 0 and 100");
+    if (!loc.value.trim()) throw new Error("Location is required");
 
     const tx = await contract.addSensorData(
       Number(sid.value),
       Number(temp.value),
-      Number(hum.value),
-      loc.value.trim()
+      h,
+      loc.value
     );
-
     alert("Tx sent:\n" + tx.hash);
-    await tx.wait();
-    alert("✅ Sensor data added");
-  } catch (e) {
-    alert("❌ " + e.message);
-  }
-});
+  } catch (e) { alert(e.message); }
+};
 
 /* ===============================
    TRANSFER OWNERSHIP
 ================================ */
-document.getElementById("transferBtn").addEventListener("click", async () => {
-  if (!contract) return alert("Connect MetaMask first");
-
+transferBtn.onclick = async () => {
   try {
-    requireValue(tid.value, "Batch ID required");
-    requireValue(to.value, "New owner address required");
-    requireAddress(to.value);
+    if (isNaN(tid.value)) throw new Error("Batch ID must be a number");
+    if (!ethers.utils.isAddress(to.value))
+      throw new Error("Enter a valid Ethereum address");
 
     const tx = await contract.transferOwnership(
       Number(tid.value),
       to.value
     );
-
     alert("Tx sent:\n" + tx.hash);
-    await tx.wait();
-    alert("✅ Ownership transferred");
-  } catch (e) {
-    alert("❌ " + e.message);
-  }
-});
+  } catch (e) { alert(e.message); }
+};
 
 /* ===============================
-   MARK AS ARRIVED (RETAILER)
+   MARK AS ARRIVED
 ================================ */
-document.getElementById("arriveBtn").addEventListener("click", async () => {
-  if (!contract) return alert("Connect MetaMask first");
-
+arriveBtn.onclick = async () => {
   try {
-    requireValue(rid.value, "Batch ID required");
-
-    const tx = await contract.markAsArrived(
-      Number(rid.value),
-      true
-    );
-
+    if (isNaN(rid.value)) throw new Error("Batch ID must be a number");
+    const tx = await contract.markAsArrived(Number(rid.value), true);
     alert("Tx sent:\n" + tx.hash);
-    await tx.wait();
-    alert("✅ Batch marked as arrived");
-  } catch (e) {
-    alert("❌ " + e.message);
-  }
-});
+  } catch (e) { alert(e.message); }
+};
 
 /* ===============================
-   VIEW HISTORY (CUSTOMER)
+   VIEW HISTORY
 ================================ */
-document.getElementById("viewBtn").addEventListener("click", async () => {
-  if (!contract) return alert("Connect MetaMask first");
-
+viewBtn.onclick = async () => {
   try {
-    requireValue(vid.value, "Batch ID required");
-
-    const data = await contract.getBatchHistory(
-      Number(vid.value)
-    );
-
-    document.getElementById("out").innerText =
-      JSON.stringify(data, null, 2);
-  } catch (e) {
-    alert("❌ " + e.message);
-  }
-});
+    if (isNaN(vid.value)) throw new Error("Batch ID must be a number");
+    const data = await contract.getBatchHistory(Number(vid.value));
+    out.innerText = JSON.stringify(data, null, 2);
+  } catch (e) { alert(e.message); }
+};
 </script>
 
 </body>
