@@ -70,6 +70,21 @@ const ABI = [
 let provider, signer, contract;
 
 /* ===============================
+   VALIDATION HELPERS
+================================ */
+function requireValue(v, msg) {
+  if (v === undefined || v === null || v === "") {
+    throw new Error(msg);
+  }
+}
+
+function requireAddress(addr) {
+  if (!ethers.utils.isAddress(addr)) {
+    throw new Error("Invalid Ethereum address");
+  }
+}
+
+/* ===============================
    CONNECT METAMASK
 ================================ */
 document.getElementById("connectBtn").addEventListener("click", async () => {
@@ -83,104 +98,125 @@ document.getElementById("connectBtn").addEventListener("click", async () => {
   const account = await signer.getAddress();
   document.getElementById("account").innerText = account;
 
-  // enable buttons
   ["createBtn","sensorBtn","transferBtn","arriveBtn","viewBtn"]
     .forEach(id => document.getElementById(id).disabled = false);
 });
 
 /* ===============================
-   PRODUCER
+   CREATE BATCH (PRODUCER)
 ================================ */
 document.getElementById("createBtn").addEventListener("click", async () => {
   if (!contract) return alert("Connect MetaMask first");
 
   try {
+    requireValue(bid.value, "Batch ID required");
+    requireValue(name.value, "Product name required");
+    requireValue(qty.value, "Quantity required");
+
     const tx = await contract.createBatch(
-      parseInt(bid.value),
-      name.value,
-      parseInt(qty.value)
+      Number(bid.value),
+      name.value.trim(),
+      Number(qty.value)
     );
+
     alert("Tx sent:\n" + tx.hash);
     await tx.wait();
-    alert("Batch created successfully");
+    alert("✅ Batch created");
   } catch (e) {
-    alert(e.reason || e.message);
+    alert("❌ " + e.message);
   }
 });
 
 /* ===============================
-   TRANSPORTER
+   ADD SENSOR DATA (TRANSPORTER)
 ================================ */
 document.getElementById("sensorBtn").addEventListener("click", async () => {
   if (!contract) return alert("Connect MetaMask first");
 
   try {
+    requireValue(sid.value, "Batch ID required");
+    requireValue(temp.value, "Temperature required");
+    requireValue(hum.value, "Humidity required");
+    requireValue(loc.value, "Location required");
+
     const tx = await contract.addSensorData(
-      parseInt(sid.value),
-      parseInt(temp.value),
-      parseInt(hum.value),
-      loc.value
+      Number(sid.value),
+      Number(temp.value),
+      Number(hum.value),
+      loc.value.trim()
     );
+
     alert("Tx sent:\n" + tx.hash);
     await tx.wait();
-    alert("Sensor data added");
+    alert("✅ Sensor data added");
   } catch (e) {
-    alert(e.reason || e.message);
+    alert("❌ " + e.message);
   }
 });
 
 /* ===============================
-   OWNERSHIP TRANSFER
+   TRANSFER OWNERSHIP
 ================================ */
 document.getElementById("transferBtn").addEventListener("click", async () => {
   if (!contract) return alert("Connect MetaMask first");
 
   try {
+    requireValue(tid.value, "Batch ID required");
+    requireValue(to.value, "New owner address required");
+    requireAddress(to.value);
+
     const tx = await contract.transferOwnership(
-      parseInt(tid.value),
+      Number(tid.value),
       to.value
     );
+
     alert("Tx sent:\n" + tx.hash);
     await tx.wait();
-    alert("Ownership transferred");
+    alert("✅ Ownership transferred");
   } catch (e) {
-    alert(e.reason || e.message);
+    alert("❌ " + e.message);
   }
 });
 
 /* ===============================
-   RETAILER
+   MARK AS ARRIVED (RETAILER)
 ================================ */
 document.getElementById("arriveBtn").addEventListener("click", async () => {
   if (!contract) return alert("Connect MetaMask first");
 
   try {
+    requireValue(rid.value, "Batch ID required");
+
     const tx = await contract.markAsArrived(
-      parseInt(rid.value),
+      Number(rid.value),
       true
     );
+
     alert("Tx sent:\n" + tx.hash);
     await tx.wait();
-    alert("Batch marked as arrived");
+    alert("✅ Batch marked as arrived");
   } catch (e) {
-    alert(e.reason || e.message);
+    alert("❌ " + e.message);
   }
 });
 
 /* ===============================
-   CUSTOMER VIEW
+   VIEW HISTORY (CUSTOMER)
 ================================ */
 document.getElementById("viewBtn").addEventListener("click", async () => {
   if (!contract) return alert("Connect MetaMask first");
 
   try {
+    requireValue(vid.value, "Batch ID required");
+
     const data = await contract.getBatchHistory(
-      parseInt(vid.value)
+      Number(vid.value)
     );
+
     document.getElementById("out").innerText =
       JSON.stringify(data, null, 2);
   } catch (e) {
-    alert(e.reason || e.message);
+    alert("❌ " + e.message);
   }
 });
 </script>
