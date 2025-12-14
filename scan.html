@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>FreshChain – Product Traceability</title>
+<title>FreshChain – Blockchain Product Traceability</title>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <style>
 body { font-family: Arial; margin: 20px; }
@@ -12,63 +12,98 @@ pre { background:#f7f7f7; padding:10px; border-radius:6px; }
 </head>
 
 <body>
-<h2> FreshChain – Blockchain Product Traceability</h2>
+
+<h2>📦 FreshChain – Blockchain Product Traceability</h2>
 
 <div class="card">
-<pre id="out">Loading history...</pre>
+  <pre id="out">Loading history...</pre>
 </div>
 
 <script>
-const CONTRACT = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
+// 🔹 CHANGE THIS TO YOUR ALCHEMY RPC
+const RPC_URL = "https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY";
+
+const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
+
 const ABI = [
-"function getBatchHistory(uint) view returns (tuple(uint,string,uint,address,bool,bool,tuple(int,int,string,uint,address)[],tuple(address,address,uint)[],bool))"
+  "function getBatchHistory(uint256) view returns (tuple(uint256,string,uint256,address,bool,bool,tuple(int256,int256,string,uint256,address)[],tuple(address,address,uint256)[],bool))"
 ];
 
-const provider = new ethers.providers.JsonRpcProvider("https://rpc.sepolia.org");
-const contract = new ethers.Contract(CONTRACT, ABI, provider);
+// 1️⃣ Read batchId from QR URL
+const params = new URLSearchParams(window.location.search);
+const batchId = params.get("batchId");
 
-const id = new URLSearchParams(window.location.search).get("batchId");
-if(!id){ out.textContent="No batch ID in QR"; throw ""; }
+if (!batchId) {
+  document.getElementById("out").textContent = "❌ No batchId found in QR code.";
+  throw new Error("No batchId");
+}
 
-(async ()=>{
-  const b = await contract.getBatchHistory(id);
-  if(!b.exists){ out.textContent="Batch not found"; return; }
+(async () => {
+  try {
+    const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
 
-  let t = `Batch ID: ${b.batchId}
+    const b = await contract.getBatchHistory(batchId);
+
+    if (!b.exists) {
+      document.getElementById("out").textContent = "❌ Batch does not exist.";
+      return;
+    }
+
+    let text = `
+Batch ID: ${b.batchId}
 Product: ${b.productName}
 Quantity: ${b.quantity}
-Owner: ${b.currentOwner}
+Current Owner: ${b.currentOwner}
 Arrived: ${b.arrived}
 Inspection Passed: ${b.inspectionPassed}
 
---- SENSOR LOGS ---
+================ SENSOR LOGS ================
 `;
 
-  b.sensors.forEach((s,i)=>{
-    t+=`#${i+1}
-Temp: ${s.temperature}°C
-Humidity: ${s.humidity}%
+    if (b.sensors.length === 0) {
+      text += "No sensor data recorded.\n";
+    } else {
+      b.sensors.forEach((s, i) => {
+        text += `
+#${i + 1}
+Temperature: ${s.temperature} °C
+Humidity: ${s.humidity} %
 Location: ${s.location}
-Time: ${new Date(s.timestamp*1000).toLocaleString()}
+Time: ${new Date(s.timestamp * 1000).toLocaleString()}
 Transporter: ${s.transporter}
-
 `;
-  });
+      });
+    }
 
-  t+=`--- OWNERSHIP HISTORY ---
+    text += `
+================ OWNERSHIP HISTORY ================
 `;
-  b.ownerships.forEach((o,i)=>{
-    t+=`#${i+1}
+
+    if (b.ownerships.length === 0) {
+      text += "No ownership transfers.\n";
+    } else {
+      b.ownerships.forEach((o, i) => {
+        text += `
+#${i + 1}
 From: ${o.from}
 To: ${o.to}
-Time: ${new Date(o.timestamp*1000).toLocaleString()}
-
+Time: ${new Date(o.timestamp * 1000).toLocaleString()}
 `;
-  });
+      });
+    }
 
-  out.textContent=t;
+    document.getElementById("out").textContent = text;
+
+  } catch (err) {
+    document.getElementById("out").textContent =
+      "❌ Error loading history.\n\n" + err.message;
+    console.error(err);
+  }
 })();
 </script>
+
 </body>
 </html>
+
 
