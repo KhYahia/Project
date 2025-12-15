@@ -2,29 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>FreshChain – Product Supply Chain History</title>
+<title>FreshChain – Product History</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-
 <style>
-  body { font-family: Arial, sans-serif; margin: 24px; }
-  h2 { margin-bottom: 16px; }
-  .card {
-    border: 1px solid #ddd;
-    padding: 16px;
-    border-radius: 10px;
-  }
-  pre {
-    background: #fafafa;
-    padding: 16px;
-    border-radius: 8px;
-    white-space: pre-wrap;
-  }
+body { font-family: Arial; margin: 24px; }
+.card { border:1px solid #ddd; padding:16px; border-radius:10px; }
+pre { background:#fafafa; padding:12px; border-radius:8px; white-space:pre-wrap; }
 </style>
 </head>
 
 <body>
 
-<h2>FreshChain – Product Supply Chain History</h2>
+<h2>FreshChain – Product History</h2>
 
 <div class="card">
   <pre id="out">Loading history...</pre>
@@ -33,107 +22,68 @@
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <script>
-const CONTRACT = "0xd9145CCE52D386f254917e481eB44e9943F39138";
-const RPC = "https://eth-sepolia.g.alchemy.com/v2/iZf1PfPx4JrG22mc06JQQ";
+const CONTRACT="0xd9145CCE52D386f254917e481eB44e9943F39138";
+const RPC="https://eth-sepolia.g.alchemy.com/v2/iZf1PfPx4JrG22mc06JQQ";
 
-const ABI = [
-  "function getBatchHistory(uint256) view returns (tuple(\
-    uint256 batchId,\
-    string productName,\
-    uint256 quantity,\
-    address producer,\
-    address distributor,\
-    address retailer,\
-    address currentOwner,\
-    bool arrived,\
-    bool inspectionPassed,\
-    tuple(int256 temperature,int256 humidity,string location,uint256 timestamp,address transporter)[] sensors,\
-    tuple(address from,address to,uint256 timestamp)[] ownerships,\
-    bool exists\
-  ))"
+const ABI=[
+"function getBatchHistory(uint256) view returns (tuple(uint256,string,uint256,address,address,address,address,bool,bool,tuple(int256,int256,string,uint256,address)[],tuple(address,address,uint256)[],bool))"
 ];
 
-const params = new URLSearchParams(window.location.search);
-const batchId = params.get("batchId");
+const params=new URLSearchParams(location.search);
+const batchId=params.get("batchId");
+const out=document.getElementById("out");
 
-if (!batchId) {
-  out.innerText = "❌ No batch ID provided in QR code.";
-} else {
-  loadHistory();
-}
+if(!batchId){ out.innerText="❌ No batch ID provided"; }
+else load();
 
-async function loadHistory() {
-  try {
-    const provider = new ethers.providers.JsonRpcProvider(RPC);
-    const contract = new ethers.Contract(CONTRACT, ABI, provider);
+async function load(){
+ try{
+  const provider=new ethers.providers.JsonRpcProvider(RPC);
+  const contract=new ethers.Contract(CONTRACT,ABI,provider);
+  const b=await contract.getBatchHistory(batchId);
 
-    const b = await contract.getBatchHistory(batchId);
+  if(!b[12]) return out.innerText="❌ Batch does not exist";
 
-    if (!b.exists) {
-      out.innerText = "❌ This batch does not exist.";
-      return;
-    }
+  let txt=`Batch ID: ${b[0]}
+Product: ${b[1]}
+Quantity: ${b[2]}
 
-    let text = `
-Batch ID: ${b.batchId}
-Product: ${b.productName}
-Quantity: ${b.quantity}
+Producer: ${b[3]}
+Distributor: ${b[4]}
+Retailer: ${b[5]}
+Current Owner: ${b[6]}
 
---- ACTOR ROLES ---
-Producer: ${b.producer}
-Distributor: ${b.distributor}
-Retailer: ${b.retailer}
+Arrived: ${b[7]}
+Inspection Passed: ${b[8]}
 
---- STATUS ---
-Current Owner: ${b.currentOwner}
-Arrived: ${b.arrived}
-Inspection Passed: ${b.inspectionPassed}
+--- SENSOR LOGS ---\n`;
 
---- SENSOR LOGS ---
-`;
+  b[9].forEach((s,i)=>{
+    txt+=`#${i+1}
+Temp: ${s[0]}°C
+Humidity: ${s[1]}%
+Location: ${s[2]}
+Time: ${new Date(Number(s[3])*1000).toLocaleString()}
+Transporter: ${s[4]}\n\n`;
+  });
 
-    if (b.sensors.length === 0) {
-      text += "No sensor data recorded.\n";
-    } else {
-      b.sensors.forEach((s, i) => {
-        text += `
-#${i + 1}
-Temperature: ${s.temperature} °C
-Humidity: ${s.humidity} %
-Location: ${s.location}
-Time: ${new Date(Number(s.timestamp) * 1000).toLocaleString()}
-Transporter: ${s.transporter}
-`;
-      });
-    }
+  txt+="--- OWNERSHIP HISTORY ---\n";
+  b[10].forEach((o,i)=>{
+    txt+=`#${i+1}
+From: ${o[0]}
+To: ${o[1]}
+Time: ${new Date(Number(o[2])*1000).toLocaleString()}\n\n`;
+  });
 
-    text += "\n--- OWNERSHIP HISTORY ---\n";
-
-    if (b.ownerships.length === 0) {
-      text += "No ownership transfers.\n";
-    } else {
-      b.ownerships.forEach((o, i) => {
-        text += `
-#${i + 1}
-From: ${o.from}
-To: ${o.to}
-Time: ${new Date(Number(o.timestamp) * 1000).toLocaleString()}
-`;
-      });
-    }
-
-    out.innerText = text;
-
-  } catch (err) {
-    console.error(err);
-    out.innerText =
-      "❌ Error loading history.\n\n" +
-      (err.reason || err.message);
-  }
+  out.innerText=txt;
+ }catch(e){
+  out.innerText="❌ Error loading history\n"+e.message;
+ }
 }
 </script>
 
 </body>
 </html>
+
 
 
