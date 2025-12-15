@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>FreshChain – Management Panel</title>
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-<style>
-body { font-family: Arial; margin: 20px; }
-.card { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 8px; }
-.hidden { display: none; }
-button { padding: 6px 10px; }
-input, select { padding: 6px; margin-right: 5px; }
-pre { background: #f7f7f7; padding: 10px; border-radius: 6px; }
-</style>
+  <meta charset="UTF-8" />
+  <title>FreshChain – Management Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    h2 { margin-top: 0; }
+    .card { border: 1px solid #ddd; padding: 16px; border-radius: 10px; margin-bottom: 16px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+    input, select, button { padding: 8px; }
+    button { cursor: pointer; }
+    .hidden { display: none; }
+    pre { background:#fafafa; padding:12px; border-radius:8px; }
+  </style>
 </head>
 
 <body>
@@ -20,87 +22,94 @@ pre { background: #f7f7f7; padding: 10px; border-radius: 6px; }
 <h2>FreshChain – Management Panel</h2>
 
 <div class="card">
-  <button id="connect">Connect MetaMask</button>
+  <button id="connectBtn">Connect MetaMask</button>
   <p><b>Account:</b> <span id="account">-</span></p>
   <p><b>Network:</b> <span id="network">-</span></p>
-</div>
 
-<div class="card">
-  <label>Select Role:</label>
-  <select id="role">
-    <option value="">-- select --</option>
-    <option value="admin">Admin</option>
-    <option value="producer">Producer</option>
-    <option value="transporter">Transporter</option>
-    <option value="distributor">Distributor</option>
-    <option value="retailer">Retailer</option>
-    <option value="customer">Customer</option>
-  </select>
+  <div class="row">
+    <label>Select Role:</label>
+    <select id="roleSelect" disabled>
+      <option value="">Choose</option>
+      <option value="admin">Admin</option>
+      <option value="producer">Producer</option>
+      <option value="transporter">Transporter</option>
+      <option value="distributor">Distributor</option>
+      <option value="retailer">Retailer</option>
+    </select>
+  </div>
 </div>
 
 <!-- ADMIN -->
 <div class="card hidden" id="admin">
-<h3>Admin – Register Roles</h3>
-<input id="regAddr" placeholder="User address">
-<button onclick="register('registerProducer')">Producer</button>
-<button onclick="register('registerTransporter')">Transporter</button>
-<button onclick="register('registerDistributor')">Distributor</button>
-<button onclick="register('registerRetailer')">Retailer</button>
+  <h3>Admin – Register Roles</h3>
+  <input id="regAddr" placeholder="0x user address" />
+  <div class="row">
+    <button onclick="register('registerProducer')">Producer</button>
+    <button onclick="register('registerTransporter')">Transporter</button>
+    <button onclick="register('registerDistributor')">Distributor</button>
+    <button onclick="register('registerRetailer')">Retailer</button>
+  </div>
 </div>
 
 <!-- PRODUCER -->
 <div class="card hidden" id="producer">
-<h3>Producer – Create Batch</h3>
-<input id="pbid" placeholder="Batch ID">
-<input id="pname" placeholder="Product Name">
-<input id="pqty" placeholder="Quantity">
-<button onclick="createBatch()">Create</button>
+  <h3>Producer – Create Batch</h3>
+  <input id="p_id" placeholder="Batch ID" />
+  <input id="p_name" placeholder="Product Name" />
+  <input id="p_qty" placeholder="Quantity" />
+  <button onclick="createBatch()">Create</button>
 </div>
 
 <!-- TRANSPORTER -->
 <div class="card hidden" id="transporter">
-<h3>Transporter – Add Sensor Data</h3>
-<input id="tbid" placeholder="Batch ID">
-<input id="temp" placeholder="Temp">
-<input id="hum" placeholder="Humidity">
-<input id="loc" placeholder="Location">
-<button onclick="addSensor()">Add</button>
+  <h3>Transporter – Add Sensor Data</h3>
+  <input id="t_id" placeholder="Batch ID" />
+  <input id="t_temp" placeholder="Temperature" />
+  <input id="t_hum" placeholder="Humidity" />
+  <input id="t_loc" placeholder="Location" />
+  <button onclick="addSensor()">Add</button>
 </div>
 
 <!-- DISTRIBUTOR -->
 <div class="card hidden" id="distributor">
-<h3>Distributor – Transfer Ownership</h3>
-<input id="dbid" placeholder="Batch ID">
-<input id="to" placeholder="New Owner">
-<button onclick="transfer()">Transfer</button>
+  <h3>Distributor – Transfer Ownership</h3>
+  <input id="d_id" placeholder="Batch ID" />
+  <input id="d_to" placeholder="New owner address" />
+  <button onclick="transfer()">Transfer</button>
 </div>
 
 <!-- RETAILER -->
 <div class="card hidden" id="retailer">
-<h3>Retailer – Mark Arrived</h3>
-<input id="rbid" placeholder="Batch ID">
-<select id="passed">
-<option value="true">Inspection Passed</option>
-<option value="false">Inspection Failed</option>
-</select>
-<button onclick="arrive()">Confirm</button>
+  <h3>Retailer – Mark Arrived</h3>
+  <input id="r_id" placeholder="Batch ID" />
+  <select id="r_passed">
+    <option value="true">Inspection Passed</option>
+    <option value="false">Inspection Failed</option>
+  </select>
+  <button onclick="markArrived()">Mark</button>
 </div>
 
-<!-- CUSTOMER -->
-<div class="card hidden" id="customer">
-<h3>Generate QR Code</h3>
-<input id="qrBatch" placeholder="Batch ID">
-<button id="genQR">Generate QR</button>
-<div id="qr"></div>
+<!-- QR -->
+<div class="card">
+  <h3>Generate QR Code</h3>
+  <input id="qrId" placeholder="Batch ID" />
+  <button onclick="generateQR()">Generate</button>
+  <br><br>
+  <img id="qrImg" />
+  <p id="qrLink"></p>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
 <script>
 const CONTRACT = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
+
 const ABI = [
-  "function createBatch(uint,string,uint)",
-  "function addSensorData(uint,int,int,string)",
-  "function transferOwnership(uint,address)",
-  "function markAsArrived(uint,bool)",
+  "function createBatch(uint256,string,uint256)",
+  "function addSensorData(uint256,int256,int256,string)",
+  "function transferOwnership(uint256,address)",
+  "function markAsArrived(uint256,bool)",
   "function registerProducer(address)",
   "function registerTransporter(address)",
   "function registerDistributor(address)",
@@ -109,35 +118,47 @@ const ABI = [
 
 let provider, signer, contract;
 
-connect.onclick = async () => {
+document.getElementById("connectBtn").onclick = async () => {
   provider = new ethers.providers.Web3Provider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
   signer = provider.getSigner();
   contract = new ethers.Contract(CONTRACT, ABI, signer);
-  account.textContent = await signer.getAddress();
-  network.textContent = (await provider.getNetwork()).name;
+
+  document.getElementById("account").innerText = await signer.getAddress();
+  document.getElementById("network").innerText = (await provider.getNetwork()).name;
+  document.getElementById("roleSelect").disabled = false;
 };
 
-role.onchange = () => {
-  document.querySelectorAll(".card.hidden").forEach(d=>d.style.display="none");
-  if(role.value) document.getElementById(role.value).style.display="block";
+document.getElementById("roleSelect").onchange = e => {
+  ["admin","producer","transporter","distributor","retailer"].forEach(r =>
+    document.getElementById(r).classList.add("hidden")
+  );
+  if (e.target.value) document.getElementById(e.target.value).classList.remove("hidden");
 };
 
-function register(fn){ contract[fn](regAddr.value); }
-function createBatch(){ contract.createBatch(pbid.value,pname.value,pqty.value); }
-function addSensor(){ contract.addSensorData(tbid.value,temp.value,hum.value,loc.value); }
-function transfer(){ contract.transferOwnership(dbid.value,to.value); }
-function arrive(){ contract.markAsArrived(rbid.value, passed.value==="true"); }
+function register(fn) {
+  contract[fn](document.getElementById("regAddr").value);
+}
+function createBatch() {
+  contract.createBatch(p_id.value, p_name.value, p_qty.value);
+}
+function addSensor() {
+  contract.addSensorData(t_id.value, t_temp.value, t_hum.value, t_loc.value);
+}
+function transfer() {
+  contract.transferOwnership(d_id.value, d_to.value);
+}
+function markArrived() {
+  contract.markAsArrived(r_id.value, r_passed.value === "true");
+}
 
-genQR.onclick = () => {
-  const id = qrBatch.value;
-  const url = `${location.origin}/Project/scan.html?batchId=${id}`;
-  qr.innerHTML="";
-  new QRCode(qr,{text:url,width:180,height:180});
-  const a=document.createElement("a");
-  a.href=url;a.textContent=url;a.target="_blank";
-  qr.appendChild(a);
-};
+function generateQR() {
+  const id = qrId.value;
+  const url = `${location.origin}${location.pathname.replace("index.html","")}scan.html?batchId=${id}`;
+  qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+  qrLink.innerText = url;
+}
 </script>
 </body>
 </html>
+
