@@ -108,8 +108,10 @@ button { cursor:pointer; }
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <script>
-const CONTRACT = "0xd9145CCE52D386f254917e481eB44e9943F39138";
+/* ✅ UPDATED CONTRACT ADDRESS */
+const CONTRACT = "0x53E74EB95Ca391BD9d100F04582f8c128f125611";
 
+/* ✅ UPDATED ABI (WRITE FUNCTIONS ONLY) */
 const ABI = [
   "function createBatch(uint256,string,uint256)",
   "function addSensorData(uint256,int256,int256,string)",
@@ -142,8 +144,9 @@ connectBtn.onclick=async()=>{
 
 roleSelect.onchange=e=>{
   ["admin","producer","transporter","distributor","retailer","customer"]
-  .forEach(r=>document.getElementById(r).classList.add("hidden"));
-  if(e.target.value) document.getElementById(e.target.value).classList.remove("hidden");
+    .forEach(r=>document.getElementById(r).classList.add("hidden"));
+  if(e.target.value)
+    document.getElementById(e.target.value).classList.remove("hidden");
 };
 
 async function registerRole(fn){
