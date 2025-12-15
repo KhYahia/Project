@@ -7,51 +7,20 @@
 
 <style>
 body { font-family: Arial, sans-serif; margin: 24px; }
-h2 { margin-top: 0; }
-
-.card {
-  border: 1px solid #ddd;
-  padding: 16px;
-  border-radius: 10px;
-  margin-bottom: 16px;
-}
-
-.row { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
-
-input, select, button {
-  padding: 8px;
-  font-size: 14px;
-}
-
-button { cursor: pointer; }
-
-.hidden { display: none; }
-
-.status {
-  margin-top: 10px;
-  padding: 10px;
-  border-radius: 6px;
-  display: none;
-  white-space: pre-line;
-}
-
-.status.ok {
-  background: #e6fffa;
-  color: #065f46;
-  border: 1px solid #10b981;
-}
-
-.status.err {
-  background: #fee2e2;
-  color: #7f1d1d;
-  border: 1px solid #ef4444;
-}
+.card { border:1px solid #ddd; padding:16px; border-radius:10px; margin-bottom:16px; }
+.row { display:flex; gap:10px; flex-wrap:wrap; margin:8px 0; }
+.hidden { display:none; }
+.status { margin-top:10px; padding:10px; border-radius:6px; white-space:pre-line; display:none; }
+.ok { background:#e6fffa; color:#065f46; border:1px solid #10b981; }
+.err { background:#fee2e2; color:#7f1d1d; border:1px solid #ef4444; }
+input, select, button { padding:8px; }
+button { cursor:pointer; }
 </style>
 </head>
 
 <body>
 
-<h2>Yahia Khanchouch – 220504543 – Blockchain Project</h2>
+<h2>FreshChain – Management Panels</h2>
 
 <!-- CONNECT -->
 <div class="card">
@@ -86,7 +55,7 @@ button { cursor: pointer; }
 <!-- PRODUCER -->
 <div class="card hidden" id="producer">
   <h3>Producer – Create Batch</h3>
-  <input id="p_id" placeholder="Batch ID (number)">
+  <input id="p_id" placeholder="Batch ID">
   <input id="p_name" placeholder="Product name">
   <input id="p_qty" placeholder="Quantity">
   <button onclick="createBatch()">Create Batch</button>
@@ -96,7 +65,7 @@ button { cursor: pointer; }
 <!-- TRANSPORTER -->
 <div class="card hidden" id="transporter">
   <h3>Transporter – Add Sensor Data</h3>
-  <input id="t_id" placeholder="Batch ID (number)">
+  <input id="t_id" placeholder="Batch ID">
   <input id="t_temp" placeholder="Temperature">
   <input id="t_hum" placeholder="Humidity (0–100)">
   <input id="t_loc" placeholder="Location">
@@ -107,7 +76,7 @@ button { cursor: pointer; }
 <!-- DISTRIBUTOR -->
 <div class="card hidden" id="distributor">
   <h3>Distributor – Transfer Ownership</h3>
-  <input id="d_id" placeholder="Batch ID (number)">
+  <input id="d_id" placeholder="Batch ID">
   <input id="d_to" placeholder="New owner address">
   <button onclick="transferOwner()">Transfer Ownership</button>
   <div id="distributorStatus" class="status"></div>
@@ -116,7 +85,7 @@ button { cursor: pointer; }
 <!-- RETAILER -->
 <div class="card hidden" id="retailer">
   <h3>Retailer – Mark As Arrived</h3>
-  <input id="r_id" placeholder="Batch ID (number)">
+  <input id="r_id" placeholder="Batch ID">
   <select id="r_passed">
     <option value="true">Inspection Passed</option>
     <option value="false">Inspection Failed</option>
@@ -128,15 +97,11 @@ button { cursor: pointer; }
 <!-- CUSTOMER -->
 <div class="card hidden" id="customer">
   <h3>Customer – Generate QR Code</h3>
-  <p>Product history is accessible only via QR scan.</p>
-
-  <input id="qrId" placeholder="Batch ID (number)">
+  <input id="qrId" placeholder="Batch ID">
   <button onclick="generateQR()">Generate QR</button>
-
   <br><br>
   <img id="qrImg">
   <p id="qrLink"></p>
-
   <div id="customerStatus" class="status"></div>
 </div>
 
@@ -158,162 +123,96 @@ const ABI = [
 
 let provider, signer, contract;
 
-function showStatus(id, msg, ok=false) {
-  const el = document.getElementById(id);
-  el.style.display = "block";
-  el.className = "status " + (ok ? "ok" : "err");
-  el.innerText = msg;
+function showStatus(id,msg,ok=false){
+  const el=document.getElementById(id);
+  el.style.display="block";
+  el.className="status "+(ok?"ok":"err");
+  el.innerText=msg;
 }
 
-/* CONNECT */
-connectBtn.onclick = async () => {
-  provider = new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  signer = provider.getSigner();
-  contract = new ethers.Contract(CONTRACT, ABI, signer);
-
-  account.innerText = await signer.getAddress();
-  network.innerText = (await provider.getNetwork()).name;
-  roleSelect.disabled = false;
+connectBtn.onclick=async()=>{
+  provider=new ethers.providers.Web3Provider(window.ethereum);
+  await provider.send("eth_requestAccounts",[]);
+  signer=provider.getSigner();
+  contract=new ethers.Contract(CONTRACT,ABI,signer);
+  account.innerText=await signer.getAddress();
+  network.innerText=(await provider.getNetwork()).name;
+  roleSelect.disabled=false;
 };
 
-/* ROLE SWITCH */
-roleSelect.onchange = e => {
+roleSelect.onchange=e=>{
   ["admin","producer","transporter","distributor","retailer","customer"]
-    .forEach(r => document.getElementById(r).classList.add("hidden"));
-  if (e.target.value)
-    document.getElementById(e.target.value).classList.remove("hidden");
+  .forEach(r=>document.getElementById(r).classList.add("hidden"));
+  if(e.target.value) document.getElementById(e.target.value).classList.remove("hidden");
 };
 
-/* ADMIN */
-async function registerRole(fn) {
-  if (!ethers.utils.isAddress(regAddr.value))
-    return showStatus("adminStatus","❌ Invalid Ethereum address.");
-
-  try {
+async function registerRole(fn){
+  if(!ethers.utils.isAddress(regAddr.value))
+    return showStatus("adminStatus","❌ Invalid address");
+  try{
     await contract[fn](regAddr.value);
-    showStatus("adminStatus","✅ Role registered successfully.",true);
-  } catch (err) {
-    showStatus("adminStatus","❌ Only contract owner can register roles.");
+    showStatus("adminStatus","✅ Role registered",true);
+  }catch{
+    showStatus("adminStatus","❌ Only admin can register roles");
   }
 }
 
-/* PRODUCER */
-async function createBatch() {
-  if (!p_id.value || isNaN(p_id.value))
-    return showStatus("producerStatus","❌ Batch ID must be a number.");
-  if (!p_name.value)
-    return showStatus("producerStatus","❌ Product name is required.");
-  if (!p_qty.value || isNaN(p_qty.value) || p_qty.value <= 0)
-    return showStatus("producerStatus","❌ Quantity must be a positive number.");
-
-  try {
-    await contract.createBatch(Number(p_id.value), p_name.value, Number(p_qty.value));
-    showStatus("producerStatus",`✅ Batch ${p_id.value} created successfully.`,true);
-  } catch (err) {
-    showStatus(
-      "producerStatus",
-      `❌ Batch ID ${p_id.value} already exists\nor you are not registered as Producer.`
-    );
+async function createBatch(){
+  if(isNaN(p_id.value)||!p_name.value||isNaN(p_qty.value))
+    return showStatus("producerStatus","❌ Invalid input");
+  try{
+    await contract.createBatch(p_id.value,p_name.value,p_qty.value);
+    showStatus("producerStatus","✅ Batch created",true);
+  }catch{
+    showStatus("producerStatus","❌ Batch exists or not Producer");
   }
 }
 
-/* ✅ FIXED TRANSPORTER */
-async function addSensor() {
-  if (!t_id.value || isNaN(t_id.value))
-    return showStatus("transporterStatus","❌ Batch ID must be a number.");
-
-  if (!t_temp.value || isNaN(t_temp.value))
-    return showStatus("transporterStatus","❌ Temperature must be a number.");
-
-  if (!t_hum.value || isNaN(t_hum.value) || t_hum.value < 0 || t_hum.value > 100)
-    return showStatus("transporterStatus","❌ Humidity must be between 0 and 100.");
-
-  if (!t_loc.value.trim())
-    return showStatus("transporterStatus","❌ Location is required.");
-
-  try {
-    const tx = await contract.addSensorData(
-      Number(t_id.value),
-      Number(t_temp.value),
-      Number(t_hum.value),
-      t_loc.value.trim()
-    );
-    await tx.wait();
-
-    showStatus(
-      "transporterStatus",
-      "✅ Sensor data added successfully.\nTransaction confirmed on blockchain.",
-      true
-    );
-
-  } catch (err) {
-    console.error(err);
-
-    let msg = "❌ Transaction failed.";
-
-    if (err.reason) msg = "❌ " + err.reason;
-    else if (err.message?.includes("Only transporter"))
-      msg = "❌ You are not registered as a Transporter.";
-    else if (err.message?.includes("Batch"))
-      msg = "❌ Batch ID does not exist.";
-
-    showStatus("transporterStatus", msg);
+async function addSensor(){
+  if(isNaN(t_id.value)||isNaN(t_temp.value)||isNaN(t_hum.value))
+    return showStatus("transporterStatus","❌ Invalid input");
+  try{
+    await contract.addSensorData(t_id.value,t_temp.value,t_hum.value,t_loc.value);
+    showStatus("transporterStatus","✅ Sensor data added",true);
+  }catch{
+    showStatus("transporterStatus","❌ Not Transporter or Batch missing");
   }
 }
 
-/* DISTRIBUTOR */
-async function transferOwner() {
-  if (!d_id.value || isNaN(d_id.value))
-    return showStatus("distributorStatus","❌ Batch ID must be a number.");
-  if (!ethers.utils.isAddress(d_to.value))
-    return showStatus("distributorStatus","❌ Invalid Ethereum address.");
-
-  try {
-    await contract.transferOwnership(Number(d_id.value), d_to.value);
-    showStatus("distributorStatus","✅ Ownership transferred successfully.",true);
-  } catch {
-    showStatus("distributorStatus","❌ Transfer failed.\nYou may not be the current owner.");
+async function transferOwner(){
+  if(isNaN(d_id.value)||!ethers.utils.isAddress(d_to.value))
+    return showStatus("distributorStatus","❌ Invalid input");
+  try{
+    await contract.transferOwnership(d_id.value,d_to.value);
+    showStatus("distributorStatus","✅ Ownership transferred",true);
+  }catch{
+    showStatus("distributorStatus","❌ Transfer failed");
   }
 }
 
-/* RETAILER */
-async function markArrived() {
-  if (!r_id.value || isNaN(r_id.value))
-    return showStatus("retailerStatus","❌ Batch ID must be a number.");
-
-  try {
-    await contract.markAsArrived(Number(r_id.value), r_passed.value==="true");
-    showStatus("retailerStatus","✅ Batch marked as arrived.",true);
-  } catch {
-    showStatus("retailerStatus","❌ Operation failed.\nYou are not registered as Retailer.");
+async function markArrived(){
+  if(isNaN(r_id.value))
+    return showStatus("retailerStatus","❌ Invalid batch ID");
+  try{
+    await contract.markAsArrived(r_id.value,r_passed.value==="true");
+    showStatus("retailerStatus","✅ Batch marked arrived",true);
+  }catch{
+    showStatus("retailerStatus","❌ Not Retailer");
   }
 }
 
-/* CUSTOMER – QR */
-function generateQR() {
-  if (!qrId.value || isNaN(qrId.value))
-    return showStatus("customerStatus","❌ Batch ID must be a number.");
-
-  const url =
-    `${location.origin}${location.pathname.replace("index.html","")}` +
-    `scan.html?batchId=${qrId.value}`;
-
-  qrImg.src =
-    `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=` +
-    encodeURIComponent(url);
-
-  qrLink.innerText = url;
-
-  showStatus(
-    "customerStatus",
-    "✅ QR generated.\nScan to view full product history.",
-    true
-  );
+function generateQR(){
+  if(isNaN(qrId.value))
+    return showStatus("customerStatus","❌ Invalid batch ID");
+  const url=`${location.origin}${location.pathname.replace("index.html","")}scan.html?batchId=${qrId.value}`;
+  qrImg.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+  qrLink.innerText=url;
+  showStatus("customerStatus","✅ QR generated",true);
 }
 </script>
 
 </body>
 </html>
+
 
 
