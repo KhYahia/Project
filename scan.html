@@ -3,48 +3,53 @@
 <head>
 <meta charset="UTF-8">
 <title>FreshChain – Product History</title>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body { font-family: Arial; margin: 24px; }
-.card { border:1px solid #ddd; padding:16px; border-radius:10px; }
-pre { background:#fafafa; padding:12px; border-radius:8px; white-space:pre-wrap; }
+body { font-family: Arial, sans-serif; margin: 24px; }
+pre { background:#fafafa; padding:16px; border-radius:10px; }
 </style>
 </head>
 
 <body>
 
-<h2>FreshChain – Product History</h2>
+<h2>FreshChain – Product Supply Chain History</h2>
 
-<div class="card">
-  <pre id="out">Loading history...</pre>
-</div>
+<pre id="out">Loading history...</pre>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <script>
-const CONTRACT="0xd9145CCE52D386f254917e481eB44e9943F39138";
-const RPC="https://eth-sepolia.g.alchemy.com/v2/iZf1PfPx4JrG22mc06JQQ";
+const CONTRACT = "0xd9145CCE52D386f254917e481eB44e9943F39138"; // 🔴 UPDATE IF YOU REDEPLOY
+const RPC = "https://eth-sepolia.g.alchemy.com/v2/iZf1PfPx4JrG22mc06JQQ";
 
-const ABI=[
-"function getBatchHistory(uint256) view returns (tuple(uint256,string,uint256,address,address,address,address,bool,bool,tuple(int256,int256,string,uint256,address)[],tuple(address,address,uint256)[],bool))"
+const ABI = [
+  "function getBatchHistory(uint256) view returns (tuple(uint256,string,uint256,address,address,address,address,bool,bool,tuple(int256,int256,string,uint256,address)[],tuple(address,address,uint256)[],bool))"
 ];
 
-const params=new URLSearchParams(location.search);
-const batchId=params.get("batchId");
-const out=document.getElementById("out");
+const params = new URLSearchParams(window.location.search);
+const batchId = params.get("batchId");
+const out = document.getElementById("out");
 
-if(!batchId){ out.innerText="❌ No batch ID provided"; }
-else load();
+if (!batchId) {
+  out.innerText = "❌ No batch ID provided.";
+} else {
+  load();
+}
 
-async function load(){
- try{
-  const provider=new ethers.providers.JsonRpcProvider(RPC);
-  const contract=new ethers.Contract(CONTRACT,ABI,provider);
-  const b=await contract.getBatchHistory(batchId);
+async function load() {
+  try {
+    const provider = new ethers.providers.JsonRpcProvider(RPC);
+    const contract = new ethers.Contract(CONTRACT, ABI, provider);
 
-  if(!b[12]) return out.innerText="❌ Batch does not exist";
+    const b = await contract.getBatchHistory(batchId);
 
-  let txt=`Batch ID: ${b[0]}
+    if (!b[12]) {
+      out.innerText = "❌ Batch does not exist.";
+      return;
+    }
+
+    let txt = `
+Batch ID: ${b[0]}
 Product: ${b[1]}
 Quantity: ${b[2]}
 
@@ -56,34 +61,42 @@ Current Owner: ${b[6]}
 Arrived: ${b[7]}
 Inspection Passed: ${b[8]}
 
---- SENSOR LOGS ---\n`;
+--- SENSOR LOGS ---
+`;
 
-  b[9].forEach((s,i)=>{
-    txt+=`#${i+1}
-Temp: ${s[0]}°C
-Humidity: ${s[1]}%
+    b[9].forEach((s, i) => {
+      txt += `
+#${i + 1}
+Temp: ${s[0]} °C
+Humidity: ${s[1]} %
 Location: ${s[2]}
-Time: ${new Date(Number(s[3])*1000).toLocaleString()}
-Transporter: ${s[4]}\n\n`;
-  });
+Time: ${new Date(Number(s[3]) * 1000).toLocaleString()}
+Transporter: ${s[4]}
+`;
+    });
 
-  txt+="--- OWNERSHIP HISTORY ---\n";
-  b[10].forEach((o,i)=>{
-    txt+=`#${i+1}
+    txt += "\n--- OWNERSHIP HISTORY ---\n";
+
+    b[10].forEach((o, i) => {
+      txt += `
+#${i + 1}
 From: ${o[0]}
 To: ${o[1]}
-Time: ${new Date(Number(o[2])*1000).toLocaleString()}\n\n`;
-  });
+Time: ${new Date(Number(o[2]) * 1000).toLocaleString()}
+`;
+    });
 
-  out.innerText=txt;
- }catch(e){
-  out.innerText="❌ Error loading history\n"+e.message;
- }
+    out.innerText = txt;
+
+  } catch (e) {
+    out.innerText = "❌ Error loading history:\n" + e.message;
+  }
 }
 </script>
 
 </body>
 </html>
+
 
 
 
