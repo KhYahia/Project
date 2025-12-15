@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <title>FreshChain – Blockchain Product Traceability</title>
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <style>
-body { font-family: Arial; margin: 20px; }
-.card { border:1px solid #ddd; padding:15px; border-radius:8px; }
-pre { background:#f7f7f7; padding:10px; border-radius:6px; }
+  body { font-family: Arial; margin: 24px; }
+  .card { border:1px solid #ddd; padding:16px; border-radius:10px; }
+  pre { background:#fafafa; padding:12px; border-radius:8px; }
 </style>
 </head>
 
@@ -19,91 +19,71 @@ pre { background:#f7f7f7; padding:10px; border-radius:6px; }
   <pre id="out">Loading history...</pre>
 </div>
 
-<script>
-// 🔹 CHANGE THIS TO YOUR ALCHEMY RPC
-const RPC_URL = "https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY";
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
-const CONTRACT_ADDRESS = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
+<script>
+const CONTRACT = "0x92F8eFCB1cd479eE2c7FE9AaDAFEe6248B09e88F";
+const RPC = "https://eth-sepolia.g.alchemy.com/v2/iZf1PfPx4JrG22mc06JQQ";
 
 const ABI = [
   "function getBatchHistory(uint256) view returns (tuple(uint256,string,uint256,address,bool,bool,tuple(int256,int256,string,uint256,address)[],tuple(address,address,uint256)[],bool))"
 ];
 
-// 1️⃣ Read batchId from QR URL
-const params = new URLSearchParams(window.location.search);
+const params = new URLSearchParams(location.search);
 const batchId = params.get("batchId");
 
 if (!batchId) {
-  document.getElementById("out").textContent = "❌ No batchId found in QR code.";
-  throw new Error("No batchId");
+  out.innerText = "No batch ID provided.";
+} else {
+  load();
 }
 
-(async () => {
+async function load() {
   try {
-    const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-
+    const provider = new ethers.providers.JsonRpcProvider(RPC);
+    const contract = new ethers.Contract(CONTRACT, ABI, provider);
     const b = await contract.getBatchHistory(batchId);
 
-    if (!b.exists) {
-      document.getElementById("out").textContent = "❌ Batch does not exist.";
-      return;
-    }
+    let txt = `
+Batch ID: ${b[0]}
+Product: ${b[1]}
+Quantity: ${b[2]}
+Current Owner: ${b[3]}
+Arrived: ${b[4]}
+Inspection Passed: ${b[5]}
 
-    let text = `
-Batch ID: ${b.batchId}
-Product: ${b.productName}
-Quantity: ${b.quantity}
-Current Owner: ${b.currentOwner}
-Arrived: ${b.arrived}
-Inspection Passed: ${b.inspectionPassed}
-
-================ SENSOR LOGS ================
+--- SENSOR LOGS ---
 `;
 
-    if (b.sensors.length === 0) {
-      text += "No sensor data recorded.\n";
-    } else {
-      b.sensors.forEach((s, i) => {
-        text += `
-#${i + 1}
-Temperature: ${s.temperature} °C
-Humidity: ${s.humidity} %
-Location: ${s.location}
-Time: ${new Date(s.timestamp * 1000).toLocaleString()}
-Transporter: ${s.transporter}
+    b[6].forEach((s,i)=>{
+      txt += `
+#${i+1}
+Temp: ${s[0]} °C
+Humidity: ${s[1]} %
+Location: ${s[2]}
+Time: ${new Date(Number(s[3])*1000).toLocaleString()}
+Transporter: ${s[4]}
 `;
-      });
-    }
+    });
 
-    text += `
-================ OWNERSHIP HISTORY ================
+    txt += "\n--- OWNERSHIP HISTORY ---\n";
+
+    b[7].forEach((o,i)=>{
+      txt += `
+#${i+1}
+From: ${o[0]}
+To: ${o[1]}
+Time: ${new Date(Number(o[2])*1000).toLocaleString()}
 `;
+    });
 
-    if (b.ownerships.length === 0) {
-      text += "No ownership transfers.\n";
-    } else {
-      b.ownerships.forEach((o, i) => {
-        text += `
-#${i + 1}
-From: ${o.from}
-To: ${o.to}
-Time: ${new Date(o.timestamp * 1000).toLocaleString()}
-`;
-      });
-    }
+    out.innerText = txt;
 
-    document.getElementById("out").textContent = text;
-
-  } catch (err) {
-    document.getElementById("out").textContent =
-      "❌ Error loading history.\n\n" + err.message;
-    console.error(err);
+  } catch (e) {
+    out.innerText = "❌ Error loading history.\n" + e.message;
   }
-})();
+}
 </script>
 
 </body>
 </html>
-
-
